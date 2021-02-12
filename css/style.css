@@ -32,8 +32,8 @@ body,
 
 #tweetMessage {
     position: absolute;
-    top: 8px;
-    left: 8px;
+    top: -100px;
+    left: -500px;
     height: auto;
     width: 360px;
     z-index: 20000;

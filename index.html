@@ -264,7 +264,6 @@
 				imageryProviderViewModels: imageryViewModels
 			});
 
-
 			/* baseLayerPickerここまで */
 
 			viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
@@ -367,7 +366,8 @@
 					var pickedObject = scene.pick(movement.position);
 					if (Cesium.defined(pickedObject)) {
 						var pickedObjectId = pickedObject.id.toString();
-						$(tweetMessage).show();
+						$(tweetMessage).hide();
+						$(tweetMessage).fadeIn(200);
 						var targetObject = jsonArray.find((n) => n.id === pickedObjectId);
 						text = targetObject.description;
 						var windowWidth = $(window).width();
@@ -390,7 +390,7 @@
 								} else {
 									$(tweetMessage).offset({
 										top: e.pageY + 8,
-										left: 8
+										left: windowWidth * 0.5 - 160
 									});
 								}
 							});
@@ -428,7 +428,7 @@
 			labelAdd = labels.add({
 				id: id,
 				position: positionsCartesian3,
-				font: "12pt Sans-Serif",
+				font: "11pt Sans-Serif",
 				style: Cesium.LabelStyle.FILL,
 				fillColor: Cesium.Color.WHITE,
 				pixelOffset: pixelOffset,

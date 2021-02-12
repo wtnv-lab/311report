@@ -374,15 +374,22 @@
 							$(window).click(function (e) {
 								var rightMargin = windowWidth - e.pageX;
 								$(tweetMessage).html(text);
-								if (rightMargin < 320) {
-									$(tweetMessage).offset({
-										top: e.pageY + 8,
-										left: e.pageX - 312
-									});
+								if (smallScreen == 0) {
+									if (rightMargin < 320) {
+										$(tweetMessage).offset({
+											top: e.pageY + 8,
+											left: e.pageX - 312
+										});
+									} else {
+										$(tweetMessage).offset({
+											top: e.pageY + 8,
+											left: e.pageX + 8
+										});
+									}
 								} else {
 									$(tweetMessage).offset({
 										top: e.pageY + 8,
-										left: e.pageX + 8
+										left: 8
 									});
 								}
 							});

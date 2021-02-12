@@ -330,7 +330,7 @@
 		function loadJsonTestimony() {
 			var jsonFile = "data/czml/weathernews.json";
 			$.getJSON(jsonFile, function (json) {
-				for (var i = 0; i < 50; i++) {
+				for (var i = 0; i < 100; i++) {
 					if (jsonNum >= json.length) {
 						stopTimer();
 						delete jsonFile;
@@ -365,12 +365,10 @@
 			handler.setInputAction(function onLeftClick(movement) {
 					var pickedObject = scene.pick(movement.position);
 					if (Cesium.defined(pickedObject)) {
-						console.log(pickedObject)
 						var pickedObjectId = pickedObject.id.toString();
 						$(tweetMessage).show();
 						var targetObject = jsonArray.find((n) => n.id === pickedObjectId);
 						text = targetObject.description;
-						console.log(text);
 						var windowWidth = $(window).width();
 						$(function () {
 							$(window).click(function (e) {

@@ -225,7 +225,8 @@
 				iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/bingAerial.png'),
 				creationFunction: function () {
 					setTimeout(function () {
-						layers._layers[0].brightness = 0.5;
+						layers._layers[0].brightness = 0.6;
+						shinsai2011Photo.alpha = 1;
 					}, 10);
 					return satelliteMap;
 				}
@@ -237,8 +238,9 @@
 				iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/gsiGray.png'),
 				creationFunction: function () {
 					setTimeout(function () {
-						layers._layers[0].brightness = 0.25;
+						layers._layers[0].brightness = 0.4;
 						layers._layers[0].saturation = 0.2;
+						shinsai2011Photo.alpha = 0;
 					}, 10);
 					return roadMap;
 				}
@@ -253,6 +255,7 @@
 					setTimeout(function () {
 						layers._layers[0].brightness = 0.4;
 						layers._layers[0].saturation = 1.0;
+						shinsai2011Photo.alpha = 0;
 					}, 10);
 					return terrainMap;
 				}
@@ -263,6 +266,15 @@
 				globe: viewer.scene.globe,
 				imageryProviderViewModels: imageryViewModels
 			});
+
+			//被災直後の空中写真
+			shinsai2011Photo = layers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
+				url: 'https://cyberjapandata.gsi.go.jp/xyz/toho1/',
+				fileExtension: 'jpg',
+				credit: '国土地理院',
+				maximumLevel: 17
+			}));
+			shinsai2011Photo.brightness = 0.6;
 
 			/* baseLayerPickerここまで */
 

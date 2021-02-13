@@ -346,10 +346,9 @@
 						stopTimer();
 						delete jsonFile;
 						loadingDiv.innerHTML = "<p class='twCounter'>Completed.</p>";
-						setTimeout('fadeInOut(blackOutDiv,0)', 2000);
-						setTimeout('fadeInOut(loadingDiv,0)', 2000);
-						setTimeout('changeViewPoint(1, 3)', 2000);
-						//setTimeout('textSearch("")', 6000);
+						setTimeout('fadeInOut(blackOutDiv,0)', 1000);
+						setTimeout('fadeInOut(loadingDiv,0)', 1000);
+						setTimeout('changeViewPoint(1, 3)', 1000);
 						descriptionBalloon();
 						break;
 					} else {
@@ -437,18 +436,20 @@
 				verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
 				//translucencyByDistance: translucencyByDistance
 			});
-			labelAdd = labels.add({
-				id: id,
-				position: positionsCartesian3,
-				font: "11pt Sans-Serif",
-				style: Cesium.LabelStyle.FILL,
-				fillColor: Cesium.Color.WHITE,
-				pixelOffset: pixelOffset,
-				text: name,
-				//show: false,
-				scaleByDistance: scaleByDistance,
-				translucencyByDistance: translucencyByDistance
-			});
+			if (mobile != 1) {
+				labelAdd = labels.add({
+					id: id,
+					position: positionsCartesian3,
+					font: "11pt Sans-Serif",
+					style: Cesium.LabelStyle.FILL,
+					fillColor: Cesium.Color.WHITE,
+					pixelOffset: pixelOffset,
+					text: name,
+					//show: false,
+					scaleByDistance: scaleByDistance,
+					translucencyByDistance: translucencyByDistance
+				});
+			}
 		}
 		/* ここまでJsonロード・ビルボード＆ラベル追加 */
 
@@ -504,7 +505,8 @@
 		function flyToMyLocation() {
 			function fly(position) {
 				viewer.camera.flyTo({
-					destination: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords.latitude,
+					destination: Cesium.Cartesian3.fromDegrees(position.coords.longitude, position.coords
+						.latitude,
 						3000.0),
 					easingFunction: Cesium.EasingFunction.CUBIC_IN_OUT
 				});
@@ -542,23 +544,35 @@
 			var billboardsObject = viewer.scene.primitives._primitives[0]._billboards;
 			var labelsObject = viewer.scene.primitives._primitives[1]._labels;
 			for (var i = 0; i < billboardsObject.length; i++) {
-				// カラ検索で初期化
-				if (searchQuery == "") {
-					billboardsObject[i].show = true;
-					labelsObject[i].show = true;
-					//billboardsObject[i].translucencyByDistance = translucencyByDistance;
-					labelsObject[i].translucencyByDistance = translucencyByDistance;
-
+				if (mobile == 1) {
+					// カラ検索で初期化
+					if (searchQuery == "") {
+						billboardsObject[i].show = true;
+					} else {
+						// 文字列が含まれるビルボードのみアクティブにする
+						if (targetObject.find((v) => v.id === billboardsObject[i]._id)) {
+							billboardsObject[i].show = true;
+						} else {
+							billboardsObject[i].show = false;
+						}
+					}
 				} else {
-					// 文字列が含まれるビルボードのみアクティブにする
-					if (targetObject.find((v) => v.id === billboardsObject[i]._id)) {
+					// カラ検索で初期化
+					if (searchQuery == "") {
 						billboardsObject[i].show = true;
 						labelsObject[i].show = true;
-						//billboardsObject[i].translucencyByDistance = undefined;
-						labelsObject[i].translucencyByDistance = undefined;
+						labelsObject[i].translucencyByDistance = translucencyByDistance;
+
 					} else {
-						billboardsObject[i].show = false;
-						labelsObject[i].show = false;
+						// 文字列が含まれるビルボードのみアクティブにする
+						if (targetObject.find((v) => v.id === billboardsObject[i]._id)) {
+							billboardsObject[i].show = true;
+							labelsObject[i].show = true;
+							labelsObject[i].translucencyByDistance = undefined;
+						} else {
+							billboardsObject[i].show = false;
+							labelsObject[i].show = false;
+						}
 					}
 				}
 			}

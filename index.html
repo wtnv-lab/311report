@@ -132,12 +132,16 @@
 
 		function resizeWindow() {
 			if (mobile != 0) {
-				var screenWidth = window.innerWidth;
 				var screenHeight = window.innerHeight;
+				var screenWidth = window.innerWidth;
 				$(function () {
 					document.body.style.height = screenHeight;
+					document.body.style.width = screenWidth;
 					$('#cesiumContainer').height(screenHeight);
+					$('#cesiumContainer').width(screenHWidth);
 					$('#blackOut').height(screenHeight);
+					$('#blackOut').height(screenWidth);
+
 				});
 			}
 			setTimeout('loadCesium()', 100);
@@ -604,6 +608,7 @@
 					}
 				}
 			}
+			viewer.scene.requestRender();
 		}
 	</script>
 </body>

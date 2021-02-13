@@ -346,9 +346,9 @@
 						stopTimer();
 						delete jsonFile;
 						loadingDiv.innerHTML = "<p class='twCounter'>Completed.</p>";
-						setTimeout('fadeInOut(blackOutDiv,0)', 1000);
-						setTimeout('fadeInOut(loadingDiv,0)', 1000);
-						setTimeout('changeViewPoint(1, 3)', 1000);
+						setTimeout('fadeInOut(blackOutDiv,0)', 2000);
+						setTimeout('fadeInOut(loadingDiv,0)', 2000);
+						setTimeout('changeViewPoint(1, 3)', 2000);
 						descriptionBalloon();
 						break;
 					} else {
@@ -428,15 +428,14 @@
 
 		//ビルボード・ラベル追加
 		function billboardLabelAdd(id, positionsCartesian3, iconUrl, name) {
-			billboardsAdd = billboards.add({
-				id: id,
-				position: positionsCartesian3,
-				image: "data/icon/flags/" + iconUrl,
-				scale: 0.4,
-				verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-				//translucencyByDistance: translucencyByDistance
-			});
 			if (mobile != 1) {
+				billboardsAdd = billboards.add({
+					id: id,
+					position: positionsCartesian3,
+					image: "data/icon/flags/" + iconUrl,
+					scale: 0.4,
+					verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+				});
 				labelAdd = labels.add({
 					id: id,
 					position: positionsCartesian3,
@@ -448,6 +447,14 @@
 					//show: false,
 					scaleByDistance: scaleByDistance,
 					translucencyByDistance: translucencyByDistance
+				});
+			} else {
+				billboardsAdd = billboards.add({
+					id: id,
+					position: positionsCartesian3,
+					image: "data/icon/flags/" + iconUrl,
+					scale: 0.6,
+					verticalOrigin: Cesium.VerticalOrigin.BOTTOM
 				});
 			}
 		}

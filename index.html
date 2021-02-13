@@ -299,10 +299,13 @@
 			//ビルボード・ラベル用オブジェクト
 			billboardCollection = new Cesium.BillboardCollection();
 			billboards = viewer.scene.primitives.add(billboardCollection);
-			labels = viewer.scene.primitives.add(new Cesium.LabelCollection());
-			pixelOffset = new Cesium.Cartesian2(0.0, -20);
+			labelCollection = new Cesium.LabelCollection();
+			labels = viewer.scene.primitives.add(labelCollection);
+			verticalOrigin = Cesium.VerticalOrigin.CENTER;
+			pixelOffset = new Cesium.Cartesian2(20.0, 0);
 			scaleByDistance = new Cesium.NearFarScalar(20000.0, 1.00, 200000, 0.5);
-			translucencyByDistance = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
+			translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
+			translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
 			handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
 
 			setTimeout('groundZero()', 1000);
@@ -421,8 +424,10 @@
 		var text;
 		var billboardCollection;
 		var billboards;
+		var labelCollection;
 		var labels;
 		var pixelOffset;
+		var verticalOrigin;
 		var scaleByDistance;
 		var translucencyByDistance;
 
@@ -433,8 +438,8 @@
 					id: id,
 					position: positionsCartesian3,
 					image: "data/icon/flags/" + iconUrl,
-					scale: 0.4,
-					verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+					scale: 0.6,
+					translucencyByDistance: translucencyByDistanceBillboard
 				});
 				labelAdd = labels.add({
 					id: id,
@@ -443,10 +448,11 @@
 					style: Cesium.LabelStyle.FILL,
 					fillColor: Cesium.Color.WHITE,
 					pixelOffset: pixelOffset,
+					verticalOrigin: verticalOrigin,
 					text: name,
 					//show: false,
 					scaleByDistance: scaleByDistance,
-					translucencyByDistance: translucencyByDistance
+					translucencyByDistance: translucencyByDistanceLabel
 				});
 			} else {
 				billboardsAdd = billboards.add({
@@ -454,7 +460,7 @@
 					position: positionsCartesian3,
 					image: "data/icon/flags/" + iconUrl,
 					scale: 0.6,
-					verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+					translucencyByDistance: translucencyByDistanceBillboard
 				});
 			}
 		}

@@ -100,6 +100,10 @@
 	</div>
 	<script>
 		//視点配列
+		var viewPointsArray = [];
+		viewPointsArray[0] = new viewPoints("日本全国", 34.009340, 135.843524, -47, -50, 2000000);
+		viewPointsArray[1] = new viewPoints("初期視点", 37.819950, 141.101672, -27, -40, 240000);
+
 		function viewPoints(_label, _lat, _lng, _heading, _pitch, _range) {
 			this.label = _label;
 			this.lat = _lat;
@@ -108,10 +112,6 @@
 			this.pitch = _pitch;
 			this.range = _range;
 		}
-
-		var viewPointsArray = [];
-		viewPointsArray[0] = new viewPoints("日本全国", 34.009340, 135.843524, -47, -50, 2000000);
-		viewPointsArray[1] = new viewPoints("初期視点", 37.819950, 141.101672, -27, -40, 240000);
 
 		//端末種別と画面サイズ判別
 		var mobile = 0;

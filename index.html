@@ -429,6 +429,9 @@
 
 		//コンテンツバルーン表示
 		function descriptionBalloon() {
+			viewer.camera.changed.addEventListener(function () {
+				$(tweetMessage).fadeOut(100);
+			});
 			viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
 					var pickedObject = scene.pick(movement.position);
 					if (Cesium.defined(pickedObject)) {

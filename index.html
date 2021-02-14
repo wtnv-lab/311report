@@ -433,7 +433,6 @@
 					var pickedObject = scene.pick(movement.position);
 					if (Cesium.defined(pickedObject)) {
 						var pickedObjectId = pickedObject.id.toString();
-						$(tweetMessage).hide();
 						$(tweetMessage).fadeIn(200);
 						var targetObject = jsonArray.find((n) => n.id === pickedObjectId);
 						text = targetObject.description;

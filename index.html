@@ -129,27 +129,29 @@
 		};
 
 		//画面サイズ調整
+
 		var screenAdjust = (function () {
-			if (getDevice() != 1) {
-				setTimeout('resizeWindow(getDevice())', 0);
+			var mobile = getDevice();
+			if (mobile != 1) {
+				setTimeout('resizeWindow()', 0);
 			} else {
 				$('.titleImage').css('width', '100%');
-				setTimeout('resizeWindow(getDevice())', 1000);
+				setTimeout('resizeWindow()', 1000);
 			}
 		})();
 
-		function resizeWindow(mobile) {
-			var screenWidth = window.innerWidth;
-			var screenHeight = window.innerHeight;
+		function resizeWindow() {
 			$(function () {
-				document.body.style.height = screenHeight;
-				$('#cesiumContainer').height(screenHeight);
-				$(blackOutDiv).height(screenHeight);
+				$(cesiumContainerDiv).css('height', '100%');
+				$(cesiumContainerDiv).css('width', '100%');
+				$(blackOutDiv).css('height', '100%');
+				$(blackOutDiv).css('height', '100%');
 			});
 			setTimeout('loadCesium()', 100);
 		}
 
 		//各種DIV
+		var cesiumContainerDiv = document.getElementById("cesiumContainer");
 		var blackOutDiv = document.getElementById("blackOut");
 		var loadingDiv = document.getElementById("twCounter");
 

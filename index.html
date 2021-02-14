@@ -344,7 +344,7 @@
 			var labelCollection = new Cesium.LabelCollection();
 			var billboards = viewer.scene.primitives.add(billboardCollection);
 			var labels = viewer.scene.primitives.add(labelCollection);
-			var pixelOffset = new Cesium.Cartesian2(0.0, -20);
+			var pixelOffset = new Cesium.Cartesian2(20.0, 0);
 			var scaleByDistance = new Cesium.NearFarScalar(0.0, 1.5, 7500, 0.7);
 			var translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
 			translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);

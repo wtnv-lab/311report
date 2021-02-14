@@ -99,6 +99,20 @@
 		<p>Loading...</p>
 	</div>
 	<script>
+		//視点配列
+		function viewPoints(_label, _lat, _lng, _heading, _pitch, _range) {
+			this.label = _label;
+			this.lat = _lat;
+			this.lng = _lng;
+			this.heading = _heading;
+			this.pitch = _pitch;
+			this.range = _range;
+		}
+
+		var viewPointsArray = [];
+		viewPointsArray[0] = new viewPoints("日本全国", 34.009340, 135.843524, -47, -50, 2000000);
+		viewPointsArray[1] = new viewPoints("初期視点", 37.819950, 141.101672, -27, -40, 240000);
+
 		//端末種別と画面サイズ判別
 		var mobile = 0;
 
@@ -133,7 +147,7 @@
 			$(function () {
 				document.body.style.height = screenHeight;
 				$('#cesiumContainer').height(screenHeight);
-				$('#blackOut').height(screenHeight);
+				$(blackOutDiv).height(screenHeight);
 			});
 			setTimeout('loadCesium()', 100);
 		}
@@ -141,20 +155,6 @@
 		//各種DIV
 		var blackOutDiv = document.getElementById("blackOut");
 		var loadingDiv = document.getElementById("twCounter");
-
-		//視点配列
-		function viewPoints(_label, _lat, _lng, _heading, _pitch, _range) {
-			this.label = _label;
-			this.lat = _lat;
-			this.lng = _lng;
-			this.heading = _heading;
-			this.pitch = _pitch;
-			this.range = _range;
-		}
-
-		var viewPointsArray = [];
-		viewPointsArray[0] = new viewPoints("日本全国", 34.009340, 135.843524, -47, -50, 2000000);
-		viewPointsArray[1] = new viewPoints("初期視点", 37.819950, 141.101672, -27, -40, 240000);
 
 		//ビューア初期化	
 		var viewer;
@@ -175,15 +175,20 @@
 				maximumRenderTimeChange: Infinity
 			});
 
-			var globe = viewer.scene.globe;
+			scene = viewer.scene;
+			var globe = scene.globe;
+
+			//デフォルト地図を削除・ベースカラーを黒に
 			globe.imageryLayers.removeAll();
 			globe.baseColor = Cesium.Color.fromCssColorString('#000000');
 
 			//baseLayerPickar追加
 			baseLayerPickerAdd();
 
+			//ダブルクリック禁止
 			viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
-			scene = viewer.scene;
+
+			//画角を60度に
 			viewer.camera.frustum.fov = Cesium.Math.toRadians(60);
 
 			//LOD設定
@@ -200,6 +205,7 @@
 				preventScroll, false);
 			cesiumDiv.addEventListener("gestureend", preventScroll, false);
 
+			//起動シークエンス開始
 			openingSequence();
 		}
 
@@ -288,7 +294,7 @@
 				iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/gsiGray.png'),
 				creationFunction: function () {
 					setTimeout(function () {
-						layers._layers[0].brightness = 0.25;
+						layers._layers[0].brightness = 0.3;
 						layers._layers[0].saturation = 0.2;
 						shinsai2011Photo.alpha = 0;
 					}, 10);
@@ -461,6 +467,7 @@
 				Cesium.ScreenSpaceEventType.LEFT_CLICK);
 		}
 
+		//コンテンツバルーンの位置調整
 		function adjustDivPosition() {
 			setTimeout(function () {
 					var windowHeight = $(window).height();
@@ -538,27 +545,6 @@
 			navigator.geolocation.getCurrentPosition(fly);
 		}
 
-		//ヘルプ
-		function about() {
-			window.open(
-				'https://github.com/wtnv-lab/311report/'
-			);
-		}
-
-		//DIVのフェードイン・アウト	
-		function fadeInOut(layer, param) {
-			if (param == 0) {
-				$(function () {
-					$(layer).fadeOut("slow");
-				});
-				viewer.trackedEntity = undefined;
-			} else {
-				$(function () {
-					$(layer).fadeIn("slow");
-				});
-			}
-		}
-
 		//テキスト検索
 		function textSearch(searchQuery) {
 			var searchQuery = String(document.getElementById('searchQuery').value);
@@ -601,6 +587,27 @@
 				}
 			}
 			viewer.scene.requestRender();
+		}
+
+		//ヘルプ
+		function about() {
+			window.open(
+				'https://github.com/wtnv-lab/311report/'
+			);
+		}
+
+		//DIVのフェードイン・アウト
+		function fadeInOut(layer, param) {
+			if (param == 0) {
+				$(function () {
+					$(layer).fadeOut("slow");
+				});
+				viewer.trackedEntity = undefined;
+			} else {
+				$(function () {
+					$(layer).fadeIn("slow");
+				});
+			}
 		}
 	</script>
 </body>

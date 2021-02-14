@@ -101,9 +101,9 @@
 	<script>
 		//端末種別と画面サイズ判別
 		var mobile = 0;
-		var smallScreen = 0;
 
-		var getDevice = (function () {
+		//画面サイズ判別
+		function getDevice() {
 			var ua = navigator.userAgent;
 			if (ua.indexOf('iPhone') > 0 || ua.indexOf('iPod') > 0 || ua.indexOf('Android') > 0 && ua.indexOf(
 					'Mobile') > 0) {
@@ -113,33 +113,28 @@
 			} else {
 				mobile = 0;
 			}
-		})();
-
-		var screenWidth = window.parent.screen.width;
-		if (screenWidth <= 640) {
-			smallScreen = 1;
-		} else {
-			smallScreen = 0;
-		}
+			return mobile;
+		};
 
 		//画面サイズ調整
-		if (mobile != 1) {
-			setTimeout('resizeWindow()', 0);
-		} else {
-			$('.titleImage').css('width', '100%');
-			setTimeout('resizeWindow()', 1000);
-		}
-
-		function resizeWindow() {
-			if (mobile != 0) {
-				var screenHeight = window.innerHeight;
-				$(function () {
-					document.body.style.height = screenHeight;
-					$('#cesiumContainer').height(screenHeight);
-					$('#blackOut').height(screenHeight);
-
-				});
+		var screenAdjust = (function () {
+			var mobile = getDevice();
+			if (mobile != 1) {
+				setTimeout('resizeWindow(mobile)', 0);
+			} else {
+				$('.titleImage').css('width', '100%');
+				setTimeout('resizeWindow(mobile)', 1000);
 			}
+		})();
+
+		function resizeWindow(mobile) {
+			var screenWidth = window.innerWidth;
+			var screenHeight = window.innerHeight;
+			$(function () {
+				document.body.style.height = screenHeight;
+				$('#cesiumContainer').height(screenHeight);
+				$('#blackOut').height(screenHeight);
+			});
 			setTimeout('loadCesium()', 100);
 		}
 
@@ -389,7 +384,7 @@
 							$(window).click(function (e) {
 								var rightMargin = windowWidth - e.pageX;
 								$(tweetMessage).html(text);
-								if (smallScreen == 0) {
+								if (mobile != 1) {
 									if (rightMargin < 320) {
 										$(tweetMessage).offset({
 											top: e.pageY + 8,

@@ -281,8 +281,8 @@
 				creationFunction: function () {
 					setTimeout(function () {
 						layers._layers[0].brightness = 0.5;
-						shinsai2011Photo.alpha = 1;
-					}, 10);
+						shinsai2011PhotoLayer.alpha = 1;
+					}, 1);
 					return satelliteMap;
 				}
 			}));
@@ -293,10 +293,12 @@
 				iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/gsiGray.png'),
 				creationFunction: function () {
 					setTimeout(function () {
-						layers._layers[0].brightness = 0.3;
+						layers._layers[0].brightness = 0.25;
+						layers._layers[0].minimumTerrainLevel = 4;
+						layers._layers[0].maximumTerrainLevel = 18;
 						layers._layers[0].saturation = 0.2;
-						shinsai2011Photo.alpha = 0;
-					}, 10);
+						shinsai2011PhotoLayer.alpha = 0;
+					}, 1);
 					return roadMap;
 				}
 			}));
@@ -308,10 +310,12 @@
 				tooltip: '海域部は海上保安庁海洋情報部の資料を使用して作成',
 				creationFunction: function () {
 					setTimeout(function () {
+						layers._layers[0].minimumTerrainLevel = 5;
+						layers._layers[0].maximumTerrainLevel = 15;
 						layers._layers[0].brightness = 0.4;
 						layers._layers[0].saturation = 1.0;
-						shinsai2011Photo.alpha = 0;
-					}, 10);
+						shinsai2011PhotoLayer.alpha = 0;
+					}, 1);
 					return terrainMap;
 				}
 			}));
@@ -323,13 +327,20 @@
 			});
 
 			//被災直後の空中写真
-			shinsai2011Photo = layers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
+			var shinsai2011Photo = new Cesium.OpenStreetMapImageryProvider({
 				url: 'https://cyberjapandata.gsi.go.jp/xyz/toho1/',
 				fileExtension: 'jpg',
 				credit: '国土地理院',
-				maximumLevel: 17
-			}));
-			shinsai2011Photo.brightness = 0.5;
+				maximumLevel: 17,
+				brightness: 0.6
+			});
+			var layers = viewer.imageryLayers;
+			var shinsai2011PhotoLayer = new Cesium.ImageryLayer(shinsai2011Photo, {
+				minimumTerrainLevel: 15,
+				maximumTerrainLevel: 17,
+				brightness: 0.6
+			});
+			layers.add(shinsai2011PhotoLayer);
 		}
 
 		/* ここからJsonロード・ビルボード＆ラベル追加 */

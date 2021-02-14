@@ -138,17 +138,6 @@
 			setTimeout('loadCesium()', 100);
 		}
 
-		//スワイプによるスクロール禁止
-		var cesiumDiv = document.getElementById("cesiumContainer");
-
-		function preventScroll(event) {
-			event.preventDefault();
-		}
-
-		cesiumDiv.addEventListener("gesturestart", preventScroll, false);
-		cesiumDiv.addEventListener("gesturechange", preventScroll, false);
-		cesiumDiv.addEventListener("gestureend", preventScroll, false);
-
 		//各種DIV
 		var blackOutDiv = document.getElementById("blackOut");
 		var loadingDiv = document.getElementById("twCounter");
@@ -199,6 +188,17 @@
 
 			//LOD設定
 			scene.globe.maximumScreenSpaceError = 3;
+
+			//スワイプによるスクロール禁止
+			var cesiumDiv = document.getElementById("cesiumContainer");
+
+			function preventScroll(event) {
+				event.preventDefault();
+			}
+			cesiumDiv.addEventListener("gesturestart", preventScroll, false);
+			cesiumDiv.addEventListener("gesturechange",
+				preventScroll, false);
+			cesiumDiv.addEventListener("gestureend", preventScroll, false);
 
 			openingSequence();
 		}
@@ -342,6 +342,7 @@
 			var scaleByDistance = new Cesium.NearFarScalar(0.0, 1.5, 7500, 0.7);
 			var translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
 			translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
+			var verticalOrigin = Cesium.VerticalOrigin.CENTER;
 
 			var jsonNum = 0;
 
@@ -416,6 +417,7 @@
 			loadingDiv.innerHTML = "<p class='twCounter'>Completed.</p>";
 		}
 
+		//コンテンツバルーン表示
 		function descriptionBalloon() {
 			viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
 					var pickedObject = scene.pick(movement.position);
@@ -473,53 +475,6 @@
 				200);
 		}
 
-		// ビルボード・ラベル用オブジェクト
-		var id;
-		var positionsCartesian3;
-		var iconUrl;
-		var text;
-		var billboardCollection;
-		var billboards;
-		var labelCollection;
-		var labels;
-		var pixelOffset;
-		var verticalOrigin;
-		var scaleByDistance;
-		var translucencyByDistance;
-
-		//ビルボード・ラベル追加
-		function billboardLabelAdd(id, positionsCartesian3, iconUrl, name) {
-			if (mobile != 1) {
-				billboardsAdd = billboards.add({
-					id: id,
-					position: positionsCartesian3,
-					image: "data/icon/flags/" + iconUrl,
-					scale: 0.6,
-					translucencyByDistance: translucencyByDistanceBillboard
-				});
-				labelAdd = labels.add({
-					id: id,
-					position: positionsCartesian3,
-					font: "11pt Sans-Serif",
-					style: Cesium.LabelStyle.FILL,
-					fillColor: Cesium.Color.WHITE,
-					pixelOffset: pixelOffset,
-					verticalOrigin: verticalOrigin,
-					text: name,
-					//show: false,
-					scaleByDistance: scaleByDistance,
-					translucencyByDistance: translucencyByDistanceLabel
-				});
-			} else {
-				billboardsAdd = billboards.add({
-					id: id,
-					position: positionsCartesian3,
-					image: "data/icon/flags/" + iconUrl,
-					scale: 0.6,
-					translucencyByDistance: translucencyByDistanceBillboard
-				});
-			}
-		}
 		/* ここまでJsonロード・ビルボード＆ラベル追加 */
 
 		//視点移動

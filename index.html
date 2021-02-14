@@ -353,6 +353,11 @@
 
 			var timer = setInterval(function () {
 				var jsonFile = "data/czml/weathernews.json";
+				if (getDevice() != 0) {
+					var scale = 0.7;
+				} else {
+					var scale = 0.6;
+				}
 				$.getJSON(jsonFile, function (json) {
 					for (var i = 0; i < 100; i++) {
 						if (jsonNum >= json.length) {
@@ -373,7 +378,7 @@
 									id: id,
 									position: positionsCartesian3,
 									image: "data/icon/flags/" + iconUrl,
-									scale: 0.6,
+									scale: scale,
 									translucencyByDistance: translucencyByDistanceBillboard
 								});
 								labelAdd = labels.add({
@@ -393,7 +398,7 @@
 									id: id,
 									position: positionsCartesian3,
 									image: "data/icon/flags/" + iconUrl,
-									scale: 0.6,
+									scale: scale,
 									translucencyByDistance: translucencyByDistanceBillboard
 								});
 							}

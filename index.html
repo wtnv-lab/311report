@@ -190,7 +190,74 @@
 			globe.imageryLayers.removeAll();
 			globe.baseColor = Cesium.Color.fromCssColorString('#000000');
 
-			/* ここからbaseLayerPicker追加 */
+			//baseLayerPickar追加
+			baseLayerPickerAdd();
+
+			viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
+			scene = viewer.scene;
+			viewer.camera.frustum.fov = Cesium.Math.toRadians(60);
+
+			//LOD設定
+			scene.globe.maximumScreenSpaceError = 3;
+
+			//ビルボード・ラベル用オブジェクト
+			billboardCollection = new Cesium.BillboardCollection();
+			billboards = viewer.scene.primitives.add(billboardCollection);
+			labelCollection = new Cesium.LabelCollection();
+			labels = viewer.scene.primitives.add(labelCollection);
+			verticalOrigin = Cesium.VerticalOrigin.CENTER;
+			pixelOffset = new Cesium.Cartesian2(20.0, 0);
+			scaleByDistance = new Cesium.NearFarScalar(20000.0, 1.00, 200000, 0.5);
+			translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
+			translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
+			handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
+
+			openingSequence();
+		}
+
+		//起動シークエンス
+		function openingSequence() {
+
+			fadeInOut(blackOutDiv, 0);
+			fadeInOut(loadingDiv, 0);
+
+			var sequences = Promise.resolve()
+				.then(function () {
+					return new Promise((resolve, reject) => {
+						setTimeout(() => {
+							$(function () {
+								$('.titleScreen').fadeOut(1000);
+								setTimeout(function () {
+									$('.titleScreen').remove();
+								}, 1000);
+							});
+							changeViewPoint(0, 3);
+							resolve();
+						}, 2000);
+					});
+				})
+				.then(function () {
+					return new Promise((resolve, reject) => {
+						setTimeout(() => {
+							fadeInOut(blackOutDiv, 1);
+							fadeInOut(loadingDiv, 1);
+							resolve();
+						}, 4000);
+					});
+				})
+				.then(function () {
+					return new Promise((resolve, reject) => {
+						setTimeout(() => {
+							loadTweets();
+							resolve();
+						}, 1000);
+					});
+				});
+		}
+
+		//BaseLayerPicker追加
+
+		function baseLayerPickerAdd() {
 			var layers = viewer.imageryLayers;
 
 			//baseLayer配列を用意
@@ -220,7 +287,7 @@
 				iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/bingAerial.png'),
 				creationFunction: function () {
 					setTimeout(function () {
-						layers._layers[0].brightness = 0.6;
+						layers._layers[0].brightness = 0.5;
 						shinsai2011Photo.alpha = 1;
 					}, 10);
 					return satelliteMap;
@@ -233,7 +300,7 @@
 				iconUrl: Cesium.buildModuleUrl('Widgets/Images/ImageryProviders/gsiGray.png'),
 				creationFunction: function () {
 					setTimeout(function () {
-						layers._layers[0].brightness = 0.4;
+						layers._layers[0].brightness = 0.25;
 						layers._layers[0].saturation = 0.2;
 						shinsai2011Photo.alpha = 0;
 					}, 10);
@@ -263,60 +330,13 @@
 			});
 
 			//被災直後の空中写真
-			var shinsai2011Photo = layers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
+			shinsai2011Photo = layers.addImageryProvider(new Cesium.OpenStreetMapImageryProvider({
 				url: 'https://cyberjapandata.gsi.go.jp/xyz/toho1/',
 				fileExtension: 'jpg',
 				credit: '国土地理院',
 				maximumLevel: 17
 			}));
-			shinsai2011Photo.brightness = 0.6;
-
-			/* baseLayerPickerここまで */
-
-			viewer.screenSpaceEventHandler.removeInputAction(Cesium.ScreenSpaceEventType.LEFT_DOUBLE_CLICK);
-			scene = viewer.scene;
-			viewer.camera.frustum.fov = Cesium.Math.toRadians(60);
-
-			//LOD設定
-			scene.globe.maximumScreenSpaceError = 3;
-
-			//空
-			var sky = viewer.scene.skyAtmosphere;
-
-			sky.hueShift = 0.02;
-			sky.saturationShift = 0.05;
-			sky.brightnessShift = 0.13;
-
-			//起動シークエンス
-			fadeInOut(blackOutDiv, 0);
-			fadeInOut(loadingDiv, 0);
-
-			//ビルボード・ラベル用オブジェクト
-			billboardCollection = new Cesium.BillboardCollection();
-			billboards = viewer.scene.primitives.add(billboardCollection);
-			labelCollection = new Cesium.LabelCollection();
-			labels = viewer.scene.primitives.add(labelCollection);
-			verticalOrigin = Cesium.VerticalOrigin.CENTER;
-			pixelOffset = new Cesium.Cartesian2(20.0, 0);
-			scaleByDistance = new Cesium.NearFarScalar(20000.0, 1.00, 200000, 0.5);
-			translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
-			translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
-			handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
-
-			setTimeout('groundZero()', 1000);
-		}
-
-		function groundZero() {
-			$(function () {
-				$('.titleScreen').fadeOut(1000);
-				setTimeout(function () {
-					$('.titleScreen').remove();
-				}, 1000);
-			});
-			changeViewPoint(0, 3);
-			setTimeout('fadeInOut(blackOutDiv,1)', 4000);
-			setTimeout('fadeInOut(loadingDiv,1)', 4000);
-			setTimeout('loadTweets()', 4000);
+			shinsai2011Photo.brightness = 0.5;
 		}
 
 		/* ここからJsonロード・ビルボード＆ラベル追加 */

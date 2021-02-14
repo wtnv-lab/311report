@@ -200,18 +200,6 @@
 			//LOD設定
 			scene.globe.maximumScreenSpaceError = 3;
 
-			//ビルボード・ラベル用オブジェクト
-			billboardCollection = new Cesium.BillboardCollection();
-			billboards = viewer.scene.primitives.add(billboardCollection);
-			labelCollection = new Cesium.LabelCollection();
-			labels = viewer.scene.primitives.add(labelCollection);
-			verticalOrigin = Cesium.VerticalOrigin.CENTER;
-			pixelOffset = new Cesium.Cartesian2(20.0, 0);
-			scaleByDistance = new Cesium.NearFarScalar(20000.0, 1.00, 200000, 0.5);
-			translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
-			translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
-			handler = new Cesium.ScreenSpaceEventHandler(scene.canvas);
-
 			openingSequence();
 		}
 
@@ -340,58 +328,96 @@
 		}
 
 		/* ここからJsonロード・ビルボード＆ラベル追加 */
-		var jsonNum = 0;
-		var timer;
 		var jsonArray = [];
-		var handler;
+		var translucencyByDistanceLabel;
 
 		function loadTweets() {
-			timer = setInterval(function () {
-				loadJsonTestimony();
+
+			//ビルボード・ラベル用オブジェクト
+			var billboardCollection = new Cesium.BillboardCollection();
+			var labelCollection = new Cesium.LabelCollection();
+			var billboards = viewer.scene.primitives.add(billboardCollection);
+			var labels = viewer.scene.primitives.add(labelCollection);
+			var pixelOffset = new Cesium.Cartesian2(0.0, -20);
+			var scaleByDistance = new Cesium.NearFarScalar(0.0, 1.5, 7500, 0.7);
+			var translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
+			translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
+
+			var jsonNum = 0;
+
+			var timer = setInterval(function () {
+				var jsonFile = "data/czml/weathernews.json";
+				$.getJSON(jsonFile, function (json) {
+					for (var i = 0; i < 100; i++) {
+						if (jsonNum >= json.length) {
+							clearInterval(timer);
+							delete jsonFile;
+							finishLoading();
+							break;
+						} else {
+							var id = json[jsonNum].id;
+							var name = json[jsonNum].name;
+							var description = json[jsonNum].text;
+							var iconUrl = json[jsonNum].iconUrl;
+							var positions = json[jsonNum].position.cartographicDegrees;
+							positions[2] = 400 + 400 * Math.random();
+							var positionsCartesian3 = Cesium.Cartesian3.fromDegreesArrayHeights(positions)[0];
+							if (mobile != 1) {
+								billboardsAdd = billboards.add({
+									id: id,
+									position: positionsCartesian3,
+									image: "data/icon/flags/" + iconUrl,
+									scale: 0.6,
+									translucencyByDistance: translucencyByDistanceBillboard
+								});
+								labelAdd = labels.add({
+									id: id,
+									position: positionsCartesian3,
+									font: "11pt Sans-Serif",
+									style: Cesium.LabelStyle.FILL,
+									fillColor: Cesium.Color.WHITE,
+									pixelOffset: pixelOffset,
+									verticalOrigin: verticalOrigin,
+									text: name,
+									scaleByDistance: scaleByDistance,
+									translucencyByDistance: translucencyByDistanceLabel
+								});
+							} else {
+								billboardsAdd = billboards.add({
+									id: id,
+									position: positionsCartesian3,
+									image: "data/icon/flags/" + iconUrl,
+									scale: 0.6,
+									translucencyByDistance: translucencyByDistanceBillboard
+								});
+							}
+							jsonArray.push({
+								id: id,
+								text: name,
+								description: description
+							});
+							jsonNum++;
+							loadingDiv.innerHTML = "<p>" + jsonNum + "/" + json.length + "</p>";
+						}
+					}
+				});
 				viewer.scene.requestRender();
 			}, 1);
 		}
 
-		function stopTimer() {
-			clearInterval(timer);
-		}
-
-		function loadJsonTestimony() {
-			var jsonFile = "data/czml/weathernews.json";
-			$.getJSON(jsonFile, function (json) {
-				for (var i = 0; i < 100; i++) {
-					if (jsonNum >= json.length) {
-						stopTimer();
-						delete jsonFile;
-						loadingDiv.innerHTML = "<p class='twCounter'>Completed.</p>";
-						setTimeout('fadeInOut(blackOutDiv,0)', 2000);
-						setTimeout('fadeInOut(loadingDiv,0)', 2000);
-						setTimeout('changeViewPoint(1, 3)', 2000);
-						descriptionBalloon();
-						break;
-					} else {
-						var id = json[jsonNum].id;
-						var name = json[jsonNum].name;
-						var description = json[jsonNum].text;
-						var iconUrl = json[jsonNum].iconUrl;
-						var positions = json[jsonNum].position.cartographicDegrees;
-						positions[2] = 400 + 400 * Math.random();
-						var positionsCartesian3 = Cesium.Cartesian3.fromDegreesArrayHeights(positions)[0];
-						billboardLabelAdd(id, positionsCartesian3, iconUrl, name);
-						jsonArray.push({
-							id: id,
-							text: name,
-							description: description
-						});
-						jsonNum++;
-						loadingDiv.innerHTML = "<p>" + jsonNum + "/" + json.length + "</p>";
-					}
-				}
-			});
+		//ロード完了
+		function finishLoading() {
+			setTimeout(function () {
+				fadeInOut(blackOutDiv, 0);
+				fadeInOut(loadingDiv, 0);
+				changeViewPoint(1, 3);
+			}, 1000);
+			descriptionBalloon();
+			loadingDiv.innerHTML = "<p class='twCounter'>Completed.</p>";
 		}
 
 		function descriptionBalloon() {
-			handler.setInputAction(function onLeftClick(movement) {
+			viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
 					var pickedObject = scene.pick(movement.position);
 					if (Cesium.defined(pickedObject)) {
 						var pickedObjectId = pickedObject.id.toString();

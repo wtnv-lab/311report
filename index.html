@@ -113,11 +113,9 @@
 			this.range = _range;
 		}
 
-		//端末種別と画面サイズ判別
-		var mobile = 0;
-
-		//画面サイズ判別
+		//端末種別
 		function getDevice() {
+			var mobile;
 			var ua = navigator.userAgent;
 			if (ua.indexOf('iPhone') > 0 || ua.indexOf('iPod') > 0 || ua.indexOf('Android') > 0 && ua.indexOf(
 					'Mobile') > 0) {
@@ -132,12 +130,11 @@
 
 		//画面サイズ調整
 		var screenAdjust = (function () {
-			var mobile = getDevice();
-			if (mobile != 1) {
-				setTimeout('resizeWindow(mobile)', 0);
+			if (getDevice() != 1) {
+				setTimeout('resizeWindow(getDevice())', 0);
 			} else {
 				$('.titleImage').css('width', '100%');
-				setTimeout('resizeWindow(mobile)', 1000);
+				setTimeout('resizeWindow(getDevice())', 1000);
 			}
 		})();
 
@@ -369,7 +366,7 @@
 							var positions = json[jsonNum].position.cartographicDegrees;
 							positions[2] = 400 + 400 * Math.random();
 							var positionsCartesian3 = Cesium.Cartesian3.fromDegreesArrayHeights(positions)[0];
-							if (mobile != 1) {
+							if (getDevice() != 1) {
 								billboardsAdd = billboards.add({
 									id: id,
 									position: positionsCartesian3,
@@ -438,7 +435,7 @@
 							$(window).click(function (e) {
 								var rightMargin = windowWidth - e.pageX;
 								$(tweetMessage).html(text);
-								if (mobile != 1) {
+								if (getDevice() != 1) {
 									if (rightMargin < 320) {
 										$(tweetMessage).offset({
 											top: e.pageY + 8,
@@ -554,7 +551,7 @@
 			var billboardsObject = viewer.scene.primitives._primitives[0]._billboards;
 			var labelsObject = viewer.scene.primitives._primitives[1]._labels;
 			for (var i = 0; i < billboardsObject.length; i++) {
-				if (mobile == 1) {
+				if (getDevice() == 1) {
 					// カラ検索で初期化
 					if (searchQuery == "") {
 						billboardsObject[i].show = true;

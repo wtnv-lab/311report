@@ -60,12 +60,12 @@
 
 <body>
 	<div class="geocode">
-		<form action="javascript:geocode()" class="textbox" />
+		<form action="javascript:geocode()" class="functions" />
 		<input id="inputtext" class="textbox" type="text" value="" placeholder="地名で検索" />
 		</form>
 	</div>
 	<div id="textSearch">
-		<form action="javascript:textSearch()" class="textbox" />
+		<form action="javascript:textSearch()" class="functions" />
 		<input id="searchQuery" class="textbox" type="text" value="" placeholder="テキスト検索" />
 		</form>
 	</div>
@@ -78,14 +78,9 @@
 		<img class="loading" src="data/loading.gif">
 	</div>
 	<div id="cesiumContainer"></div>
-	<div id="baseLayerPickerContainer"></div>
+	<div id="baseLayerPickerContainer" class="functions"></div>
 	<div id="tweetMessage"></div>
-	<div id="button" class="general-button">
-		<div class="button-content">
-			<span class="icon-font">menu</span>
-		</div>
-	</div>
-	<div id="button2" class="general-button" onclick="about();">
+	<div id="buttonAbout" class="general-button" onclick="about();">
 		<div class="button-content">
 			<span class="icon-font">help</span>
 		</div>
@@ -434,9 +429,16 @@
 
 		//コンテンツバルーン表示
 		function descriptionBalloon() {
+			//入力フォーム，ボタンクリック時にバルーンを隠す
+			$('.functions,.general-button').click(function () {
+				$(tweetMessage).hide();
+			});
+
+			//カメラ移動時にバルーンを隠す
 			viewer.camera.changed.addEventListener(function () {
 				$(tweetMessage).fadeOut(100);
 			});
+
 			viewer.screenSpaceEventHandler.setInputAction(function onLeftClick(movement) {
 					var pickedObject = scene.pick(movement.position);
 					if (Cesium.defined(pickedObject)) {

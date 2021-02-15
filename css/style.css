@@ -141,32 +141,10 @@ button.cesium-infoBox-close {
 
 /*ボタン群*/
 
-.sample {
-    position: absolute;
-    height: 100%;
-}
-
-#button {
-    display: none;
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    z-index: 10005;
-    opacity: 0.8;
-}
-
-#button2 {
+#buttonAbout {
     position: absolute;
     top: 8px;
     right: 8px;
-    z-index: 10005;
-    opacity: 0.8;
-}
-
-#button3 {
-    position: absolute;
-    top: 8px;
-    right: 54px;
     z-index: 10005;
     opacity: 0.8;
 }
@@ -177,30 +155,6 @@ button.cesium-infoBox-close {
     left: 50%;
     margin-left: -20px;
     opacity: 0.9;
-}
-
-.sharebutton {
-    opacity: 0.8;
-    position: absolute;
-    text-align: right;
-    bottom: -16px;
-    right: 34px;
-    width: 130px;
-    z-index: 2;
-}
-
-.share {
-    width: 28px;
-    height: 28px;
-    margin: -2px;
-}
-
-.share-buttons {
-    list-style: none;
-}
-
-.share-buttons li {
-    display: inline;
 }
 
 h2 {
@@ -217,39 +171,6 @@ a {
 a:hover {
     color: #333;
     background: gray;
-}
-
-#slide_menu {
-    position: fixed;
-    top: 48px;
-    left: -200px;
-    width: 80px;
-    opacity: 0.8;
-    padding: 0px 0px 20px 0px;
-    margin: 0px;
-    margin-bottom: 0px;
-    background: white;
-    text-align: center;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
-}
-
-#slide_menu2 {
-    position: fixed;
-    top: 48px;
-    right: -200px;
-    width: 100px;
-    opacity: 0.8;
-    padding: 10px 10px 0px 10px;
-    margin: 0px;
-    margin-bottom: 0px;
-    background: white;
-    text-align: left;
-    -moz-border-radius: 3px;
-    -webkit-border-radius: 3px;
-    border-radius: 3px;
-    z-index: 10005;
 }
 
 .viewpoint {

@@ -449,6 +449,7 @@
 				if (Cesium.defined(pickedObject)) {
 					var pickedObjectId = pickedObject.id.toString();
 					$(tweetMessage).fadeIn(200);
+					adjustDivPosition();
 					var targetObject = jsonArray.find((n) => n.id === pickedObjectId);
 					text = targetObject.description;
 					var windowWidth = $(window).width();
@@ -468,13 +469,11 @@
 										left: e.pageX + 8
 									});
 								}
-								adjustDivPosition();
 							} else {
 								$(tweetMessage).offset({
 									top: e.pageY + 8,
 									left: windowWidth * 0.5 - 160
 								});
-								adjustDivPosition();
 							}
 						});
 					});

@@ -30,6 +30,8 @@ body,
 
 /*コンテンツ表示*/
 
+/*コンテンツ表示*/
+
 #tweetMessage {
     position: absolute;
     top: -100px;
@@ -37,19 +39,19 @@ body,
     height: auto;
     width: 320px;
     z-index: 20000;
-    border-radius: 5px;
-    background-color: rgba(255, 255, 255, 0.75);
-    padding: 5px;
+    color: #cccccc;
+    background-color: rgba(0, 0, 0, 0.75);
+    padding: 10px 5px;
+    outline: solid 1px rgba(255, 255, 255, 0.2);
 }
 
 .tweettext {
-    color: black;
     font-size: 13px;
     line-height: 20px;
 }
 
 .time {
-    color: black;
+    color: #cccccc;
     font-size: 10px;
 }
 

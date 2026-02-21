@@ -11,25 +11,6 @@ body,
     background-color: black;
 }
 
-#twCounter {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    width: 200px;
-    margin-top: 30px;
-    margin-left: -100px;
-    z-index: 10100;
-    opacity: 1;
-}
-
-.twCounter {
-    color: orange;
-    font-size: 16px;
-    text-align: center;
-}
-
-/*コンテンツ表示*/
-
 /*コンテンツ表示*/
 
 #tweetMessage {
@@ -43,6 +24,34 @@ body,
     background-color: rgba(0, 0, 0, 0.75);
     padding: 10px 5px;
     outline: solid 1px rgba(255, 255, 255, 0.2);
+}
+
+.mapboxgl-popup-content {
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+.mapboxgl-popup-tip {
+    border-top-color: rgba(0, 0, 0, 0.72) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.72) !important;
+}
+
+.mapboxgl-popup-close-button {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.mapboxgl-popup-close-button:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.mapboxgl-ctrl-top-right,
+.mapboxgl-ctrl-bottom-right {
+    z-index: 10005;
 }
 
 .tweettext {
@@ -143,19 +152,47 @@ button.cesium-infoBox-close {
 
 /*ボタン群*/
 
+
 #buttonAbout {
     position: absolute;
-    top: 8px;
+    top: calc(8px + env(safe-area-inset-top));
     right: 8px;
     z-index: 10005;
     opacity: 0.8;
 }
 
+#buttonAR {
+    position: absolute;
+    top: calc(84px + env(safe-area-inset-top));
+    right: 8px;
+    z-index: 10005;
+    opacity: 0.9;
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+}
+
+#buttonAR .button-content {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#buttonAR .button-text {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+    padding: 0;
+}
+
 #buttonGeo {
     position: absolute;
-    bottom: 12px;
-    left: 50%;
-    margin-left: -20px;
+    top: calc(46px + env(safe-area-inset-top));
+    right: 8px;
     opacity: 0.9;
 }
 
@@ -173,6 +210,39 @@ a {
 a:hover {
     color: #333;
     background: gray;
+}
+
+#slide_menu {
+    position: fixed;
+    top: 48px;
+    left: -200px;
+    width: 80px;
+    opacity: 0.8;
+    padding: 0px 0px 20px 0px;
+    margin: 0px;
+    margin-bottom: 0px;
+    background: white;
+    text-align: center;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+}
+
+#slide_menu2 {
+    position: fixed;
+    top: 48px;
+    right: -200px;
+    width: 100px;
+    opacity: 0.8;
+    padding: 10px 10px 0px 10px;
+    margin: 0px;
+    margin-bottom: 0px;
+    background: white;
+    text-align: left;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    z-index: 10005;
 }
 
 .viewpoint {
@@ -248,12 +318,6 @@ a:hover {
 
 /*ジオコーダ*/
 
-input {
-    margin: 2px 0px 0px 0px;
-    padding: 0px;
-    width: 100px !important;
-}
-
 #textSearch {
     opacity: 1.0;
     position: absolute;
@@ -262,21 +326,72 @@ input {
     z-index: 10001;
 }
 
-.geocode {
+#geocode {
     opacity: 1.0;
     position: absolute;
-    top: 32px;
+    top: 42px;
     left: 8px;
     z-index: 10001;
 }
 
-.functions {
-    border: 0;
-    margin: 0px;
-    padding: 0px 0px 1px 2px;
+form.textbox {
+    margin: 0;
+    padding: 0;
+}
+
+input.textbox {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    margin: 0;
+    padding: 1px 8px;
     font-size: 12px;
-    width: 100px;
-    height: 15px;
+    width: 132px;
+    height: 24px;
+    border-radius: 8px;
+    color: #f3f6fa;
+    -webkit-text-fill-color: #f3f6fa;
+    caret-color: #f3f6fa;
+    background: rgba(20, 24, 30, 0.62);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    outline: none;
+}
+
+input.textbox:focus,
+input.textbox:active {
+    color: #f3f6fa;
+    background: rgba(20, 24, 30, 0.74);
+    border-color: rgba(255, 255, 255, 0.45);
+    outline: none;
+    -webkit-text-fill-color: #f3f6fa;
+}
+
+input.textbox::placeholder {
+    color: rgba(243, 246, 250, 0.68);
+}
+
+input.textbox:-webkit-autofill,
+input.textbox:-webkit-autofill:hover,
+input.textbox:-webkit-autofill:focus,
+input.textbox:-webkit-autofill:active {
+    -webkit-text-fill-color: #f3f6fa;
+    -webkit-box-shadow: 0 0 0 1000px rgba(20, 24, 30, 0.74) inset;
+    box-shadow: 0 0 0 1000px rgba(20, 24, 30, 0.74) inset;
+    transition: background-color 9999s ease-in-out 0s;
+}
+
+@media screen and (max-width: 768px) {
+    input.textbox {
+        width: 124px !important;
+    }
+
+    #textSearch {
+        top: 8px;
+    }
+
+    #geocode {
+        top: 42px;
+    }
 }
 
 
@@ -284,24 +399,85 @@ input {
 
 .titleScreen {
     position: absolute;
-    margin: 0px;
-    padding: 0px;
+    margin: 0;
+    padding: 0;
     width: 100%;
     height: 100%;
-    display: table;
-    z-index: 10002;
-    background-color: rgba(0, 0, 0, 0);
-    opacity: 0.9;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10004;
+    overflow: hidden;
+    background: radial-gradient(circle at 25% 18%, rgba(42, 66, 99, 0.28), rgba(6, 10, 18, 0.72) 48%, rgba(3, 5, 10, 0.84) 88%);
+    opacity: 1;
 }
 
-.titleScreen p {
-    display: table-cell;
+.titleVignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at center, rgba(0, 0, 0, 0) 36%, rgba(0, 0, 0, 0.58) 100%);
+    pointer-events: none;
+}
+
+.titleGrid {
+    display: none;
+}
+
+.titlePanel {
+    position: relative;
+    width: min(86vw, 840px);
+    padding: 26px 30px 24px;
+    border: 1px solid rgba(186, 216, 255, 0.34);
+    border-radius: 14px;
     text-align: center;
-    vertical-align: middle;
+    background: linear-gradient(180deg, rgba(10, 17, 31, 0.78), rgba(8, 13, 24, 0.54));
+    box-shadow: 0 16px 46px rgba(0, 0, 0, 0.48), inset 0 0 0 1px rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(5px);
+    -webkit-backdrop-filter: blur(5px);
+}
+
+.titleOverline {
+    margin: 0 0 14px;
+    color: rgba(187, 222, 255, 0.88);
+    letter-spacing: 0.26em;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
 }
 
 .titleImage {
-    width: 640px;
+    width: min(46vw, 360px);
+    max-width: 100%;
+    filter: drop-shadow(0 7px 24px rgba(0, 0, 0, 0.65)) drop-shadow(0 0 10px rgba(160, 206, 255, 0.32));
+}
+
+.titleLoading {
+    margin: 10px 0 0;
+}
+
+.titleLoadingIcon {
+    width: 34px;
+    height: 34px;
+    opacity: 1;
+    filter: drop-shadow(0 0 18px rgba(255, 176, 64, 0.94)) drop-shadow(0 0 38px rgba(255, 128, 0, 0.78)) drop-shadow(0 0 56px rgba(255, 92, 0, 0.62));
+}
+
+.titleCaption {
+    margin: 14px 0 0;
+    color: rgba(223, 234, 252, 0.82);
+    letter-spacing: 0.08em;
+    font-size: 11px;
+    font-weight: 500;
+    text-transform: uppercase;
+}
+
+.titleCredit {
+    margin: 8px 0 0;
+    color: rgba(211, 227, 249, 0.72);
+    letter-spacing: 0.02em;
+    font-size: 11px;
+    font-weight: 500;
 }
 
 #blackOut {
@@ -313,6 +489,20 @@ input {
     background: black;
     z-index: 10002;
     opacity: 0.5;
+}
+
+@keyframes gridPulse {
+    0% {
+        opacity: 0.22;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+
+    100% {
+        opacity: 0.22;
+    }
 }
 
 .loading {

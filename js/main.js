@@ -1,9 +1,8 @@
 (function () {
   const appConfig = window.APP_CONFIG || {};
-  const googleMapsApiKey = appConfig.googleMapsApiKey || "";
   const mapboxAccessToken = appConfig.mapboxAccessToken || "";
   const mapboxStyleStreets = appConfig.mapboxStyleStreets || "mapbox/streets-v12";
-  const reportGeoJsonUrl = appConfig.reportGeoJsonUrl || appConfig.dataUrl || "data/czml/weathernews.geojson";
+  const reportGeoJsonUrl = appConfig.reportGeoJsonUrl || "data/czml/weathernews.geojson";
   const aboutUrl = appConfig.githubUrl || "https://github.com/wtnv-lab/311report/";
 
   const mapContainerId = "cesiumContainer";
@@ -26,18 +25,6 @@
   let reportGeoJsonAll = createEmptyFeatureCollection();
   let reportGeoJsonFiltered = createEmptyFeatureCollection();
   let currentSearchQuery = "";
-
-  if (googleMapsApiKey) {
-    const googleMapsScript = document.createElement("script");
-    googleMapsScript.src =
-      "https://maps.googleapis.com/maps/api/js?key=" +
-      googleMapsApiKey +
-      "&callback=initMap&loading=async";
-    googleMapsScript.async = true;
-    googleMapsScript.defer = true;
-    window.initMap = function () {};
-    document.head.appendChild(googleMapsScript);
-  }
 
   function fadeInOut(layer, show) {
     if (!layer) {

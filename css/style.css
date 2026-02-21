@@ -49,6 +49,11 @@ body,
     background: rgba(255, 255, 255, 0.08);
 }
 
+.mapboxgl-ctrl-top-right,
+.mapboxgl-ctrl-bottom-right {
+    z-index: 10005;
+}
+
 .tweettext {
     font-size: 13px;
     line-height: 20px;
@@ -454,8 +459,8 @@ input.textbox:-webkit-autofill:active {
 .titleLoadingIcon {
     width: 34px;
     height: 34px;
-    opacity: 0.9;
-    filter: drop-shadow(0 0 10px rgba(255, 156, 36, 0.62)) drop-shadow(0 0 20px rgba(255, 128, 0, 0.4));
+    opacity: 1;
+    filter: drop-shadow(0 0 18px rgba(255, 176, 64, 0.94)) drop-shadow(0 0 38px rgba(255, 128, 0, 0.78)) drop-shadow(0 0 56px rgba(255, 92, 0, 0.62));
 }
 
 .titleCaption {

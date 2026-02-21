@@ -8,7 +8,7 @@ const repoRoot = path.resolve(__dirname, "..");
 const sourcePath = path.join(repoRoot, "data", "czml", "weathernews.json");
 const outputRoot = path.join(repoRoot, "data", "czml", "weathernews-tiles");
 const tilesDir = path.join(outputRoot, "tiles");
-const zoomLevel = 9;
+const zoomLevel = 11;
 
 function clamp(value, min, max) {
   return Math.min(max, Math.max(min, value));

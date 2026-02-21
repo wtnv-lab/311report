@@ -603,6 +603,37 @@
     window.open(aboutUrl, "_blank");
   }
 
+  function bindUiEvents() {
+    const geocodeForm = document.getElementById("geocodeForm");
+    const textSearchForm = document.getElementById("textSearchForm");
+    const aboutButton = document.getElementById("buttonAbout");
+    const geoButton = document.getElementById("buttonGeo");
+
+    if (geocodeForm) {
+      geocodeForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        geocode();
+      });
+    }
+
+    if (textSearchForm) {
+      textSearchForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+        textSearch();
+      });
+    }
+
+    if (aboutButton) {
+      aboutButton.addEventListener("click", about);
+    }
+
+    if (geoButton) {
+      geoButton.addEventListener("click", flyToMyLocation);
+    }
+  }
+
+  bindUiEvents();
+
   (function screenAdjust() {
     if (getDevice() !== 1) {
       setTimeout(resizeWindow, 0);

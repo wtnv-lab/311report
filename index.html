@@ -20,12 +20,6 @@
   <link rel="stylesheet" href="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.css" />
   <link rel="stylesheet" type="text/css" media="all" href="./css/style.css" />
   <link rel="stylesheet" type="text/css" media="all" href="./css/menubutton.css" />
-  <style>
-    .mapboxgl-ctrl-top-right,
-    .mapboxgl-ctrl-bottom-right {
-      z-index: 10005;
-    }
-  </style>
 
   <script src="js/jquery-2.1.3.min.js"></script>
   <script src="https://api.mapbox.com/mapbox-gl-js/v2.15.0/mapbox-gl.js"></script>
@@ -35,12 +29,12 @@
 
 <body>
   <div id="geocode" class="functions">
-    <form action="javascript:geocode()" class="textbox">
+    <form id="geocodeForm" action="#" class="textbox">
       <input id="inputtext" class="textbox" type="text" value="" placeholder="地名で検索" />
     </form>
   </div>
   <div id="textSearch" class="functions">
-    <form action="javascript:textSearch()" class="textbox">
+    <form id="textSearchForm" action="#" class="textbox">
       <input id="searchQuery" class="textbox" type="text" value="" placeholder="テキスト検索" />
     </form>
   </div>
@@ -60,10 +54,10 @@
   <div id="cesiumContainer"></div>
   <div id="tweetMessage"></div>
 
-  <div id="buttonAbout" class="general-button" onclick="about();">
+  <div id="buttonAbout" class="general-button">
     <div class="button-content"><span class="icon-font">help</span></div>
   </div>
-  <div id="buttonGeo" class="general-button" onclick="flyToMyLocation();">
+  <div id="buttonGeo" class="general-button">
     <div class="button-content"><span class="icon-font">geo</span></div>
   </div>
 

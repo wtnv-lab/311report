@@ -17,7 +17,17 @@
   const blackOutDiv = document.getElementById("blackOut");
   const loadingDiv = document.getElementById("twCounter");
   const reportMessageDiv = document.getElementById("tweetMessage");
+  const visibleSummaryDiv = document.getElementById("visibleSummary");
+  const visibleSummaryStatusDiv = document.getElementById("visibleSummaryStatus");
+  const visibleSummaryTextDiv = document.getElementById("visibleSummaryText");
+  const visibleSummaryOpenButton = document.getElementById("visibleSummaryOpen");
+  const visibleSummaryCloseButton = document.getElementById("visibleSummaryClose");
   const titleScreenDiv = document.querySelector(".titleScreen");
+  const SUMMARY_MIN_ZOOM = 10;
+  const SUMMARY_MAX_REPORTS = 100;
+  const SUMMARY_CACHE_PREFIX = "visible-summary-v1:";
+  const SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000;
+  const SUMMARY_CACHE_MAX = 200;
 
   let map = null;
   let pointPopup = null;
@@ -27,6 +37,12 @@
   let reportGeoJsonAll = createEmptyFeatureCollection();
   let reportGeoJsonFiltered = createEmptyFeatureCollection();
   let currentSearchQuery = "";
+  let summaryDebounceTimer = null;
+  let summaryLastFeatureHash = "";
+  let summaryAbortController = null;
+  let summaryCache = new Map();
+  let summaryInFlight = new Map();
+  let summaryPanelExpanded = false;
 
   function fadeInOut(layer, show) {
     if (!layer) {
@@ -124,6 +140,314 @@
       .replace(/&amp;/g, "&")
       .replace(/\s+/g, " ")
       .trim();
+  }
+
+  function setVisibleSummary(statusText, bodyText) {
+    if (!visibleSummaryDiv) {
+      return;
+    }
+    if (visibleSummaryStatusDiv) {
+      visibleSummaryStatusDiv.textContent = statusText || "";
+    }
+    if (visibleSummaryTextDiv) {
+      visibleSummaryTextDiv.textContent = bodyText || "";
+    }
+  }
+
+  function setVisibleSummaryVisibility(visible) {
+    if (!visibleSummaryDiv) {
+      return;
+    }
+    visibleSummaryDiv.classList.toggle("isOpen", !!visible);
+  }
+
+  function setSummaryOpenButtonVisibility(visible) {
+    if (!visibleSummaryOpenButton) {
+      return;
+    }
+    visibleSummaryOpenButton.classList.toggle("isHidden", !visible);
+  }
+
+  function isSummaryUiAvailable() {
+    const isSmartphone = getDevice() === 1 || window.matchMedia("(max-width: 768px)").matches;
+    if (isSmartphone) {
+      return false;
+    }
+    if (!map || !mapReady || !layersReady) {
+      return false;
+    }
+    return map.getZoom() >= SUMMARY_MIN_ZOOM;
+  }
+
+  function applySummaryPanelState() {
+    if (!isSummaryUiAvailable()) {
+      setVisibleSummaryVisibility(false);
+      setSummaryOpenButtonVisibility(false);
+      return;
+    }
+    if (summaryPanelExpanded) {
+      setVisibleSummaryVisibility(true);
+      setSummaryOpenButtonVisibility(false);
+      return;
+    }
+    setVisibleSummaryVisibility(false);
+    setSummaryOpenButtonVisibility(true);
+  }
+
+  function getVisibleReportsForSummary() {
+    if (!map) {
+      return [];
+    }
+    const canvas = map.getCanvas();
+    if (!canvas) {
+      return [];
+    }
+
+    const features = map.queryRenderedFeatures(
+      [
+        [0, 0],
+        [canvas.width, canvas.height],
+      ],
+      { layers: [POINT_LAYER_ID, POINT_LABEL_LAYER_ID] }
+    );
+    const dedup = new Map();
+
+    for (let i = 0; i < features.length; i++) {
+      const props = (features[i] && features[i].properties) || {};
+      const id = String(props.id || "");
+      if (!id || dedup.has(id)) {
+        continue;
+      }
+      dedup.set(id, {
+        id: id,
+        label: String(props.label || ""),
+        desc: stripHtmlTags(props.desc || "").slice(0, 280),
+      });
+    }
+
+    return Array.from(dedup.values());
+  }
+
+  function hashSummaryReports(reports) {
+    const ids = [];
+    for (let i = 0; i < reports.length; i++) {
+      ids.push(reports[i].id);
+    }
+    ids.sort();
+    return ids.join("|");
+  }
+
+  function getSummaryCacheKey(reports) {
+    const zoomBucket = Math.floor((map ? map.getZoom() : 0) * 2) / 2;
+    return "z" + zoomBucket.toFixed(1) + "|" + hashSummaryReports(reports);
+  }
+
+  function pruneSummaryCache() {
+    const now = Date.now();
+    const keys = Array.from(summaryCache.keys());
+    for (let i = 0; i < keys.length; i++) {
+      const entry = summaryCache.get(keys[i]);
+      if (!entry || entry.expiresAt <= now) {
+        summaryCache.delete(keys[i]);
+      }
+    }
+    if (summaryCache.size <= SUMMARY_CACHE_MAX) {
+      return;
+    }
+    const entries = Array.from(summaryCache.entries()).sort(function (a, b) {
+      return (a[1].usedAt || 0) - (b[1].usedAt || 0);
+    });
+    while (entries.length && summaryCache.size > SUMMARY_CACHE_MAX) {
+      const oldest = entries.shift();
+      if (oldest) {
+        summaryCache.delete(oldest[0]);
+      }
+    }
+  }
+
+  function getCachedSummary(cacheKey) {
+    const now = Date.now();
+    const memory = summaryCache.get(cacheKey);
+    if (memory && memory.expiresAt > now && memory.summary) {
+      memory.usedAt = now;
+      return memory.summary;
+    }
+    summaryCache.delete(cacheKey);
+
+    try {
+      const raw = window.localStorage.getItem(SUMMARY_CACHE_PREFIX + cacheKey);
+      if (!raw) {
+        return "";
+      }
+      const parsed = JSON.parse(raw);
+      if (!parsed || parsed.expiresAt <= now || !parsed.summary) {
+        window.localStorage.removeItem(SUMMARY_CACHE_PREFIX + cacheKey);
+        return "";
+      }
+      summaryCache.set(cacheKey, {
+        summary: parsed.summary,
+        expiresAt: parsed.expiresAt,
+        usedAt: now,
+      });
+      pruneSummaryCache();
+      return parsed.summary;
+    } catch (err) {
+      return "";
+    }
+  }
+
+  function setCachedSummary(cacheKey, summaryText) {
+    const now = Date.now();
+    const entry = {
+      summary: summaryText,
+      expiresAt: now + SUMMARY_CACHE_TTL_MS,
+      usedAt: now,
+    };
+    summaryCache.set(cacheKey, entry);
+    pruneSummaryCache();
+    try {
+      window.localStorage.setItem(
+        SUMMARY_CACHE_PREFIX + cacheKey,
+        JSON.stringify({
+          summary: summaryText,
+          expiresAt: entry.expiresAt,
+        })
+      );
+    } catch (err) {
+      // localStorage is optional; continue with memory cache only.
+    }
+  }
+
+  function requestVisibleSummary(force) {
+    if (!map || !mapReady || !layersReady) {
+      return;
+    }
+
+    if (!isSummaryUiAvailable()) {
+      applySummaryPanelState();
+      summaryLastFeatureHash = "";
+      if (summaryAbortController) {
+        summaryAbortController.abort();
+        summaryAbortController = null;
+      }
+      return;
+    }
+    applySummaryPanelState();
+    if (!summaryPanelExpanded) {
+      return;
+    }
+
+    const reports = getVisibleReportsForSummary();
+    if (!reports.length) {
+      summaryLastFeatureHash = "";
+      setVisibleSummary("AIで要約: 0件", "表示中のリポートがありません。");
+      return;
+    }
+    if (reports.length > SUMMARY_MAX_REPORTS) {
+      summaryLastFeatureHash = "";
+      setVisibleSummary(
+        "AIで要約: " + reports.length + "件",
+        "要約は100件以下で実行します。地図を拡大して件数を減らしてください。"
+      );
+      return;
+    }
+
+    const hash = getSummaryCacheKey(reports);
+    if (!force && hash === summaryLastFeatureHash) {
+      return;
+    }
+    summaryLastFeatureHash = hash;
+
+    const cachedSummary = getCachedSummary(hash);
+    if (cachedSummary) {
+      setVisibleSummary("AIで要約: " + reports.length + "件（キャッシュ）", cachedSummary);
+      return;
+    }
+
+    const inflight = summaryInFlight.get(hash);
+    if (inflight) {
+      inflight
+        .then(function (summaryText) {
+          setVisibleSummary("AIで要約: " + reports.length + "件", summaryText);
+        })
+        .catch(function () {
+          setVisibleSummary(
+            "AIで要約: エラー",
+            "要約APIに接続できません。`node tools/summary-server.js` を起動して再試行してください。"
+          );
+        });
+      return;
+    }
+
+    if (summaryAbortController) {
+      summaryAbortController.abort();
+      summaryAbortController = null;
+    }
+    summaryAbortController = new AbortController();
+    setVisibleSummary("AIで要約: 生成中 (" + reports.length + "件)", "要約を作成しています...");
+
+    const pending = fetch("/api/summarize-visible", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      signal: summaryAbortController.signal,
+      body: JSON.stringify({
+        reports: reports,
+        zoom: map.getZoom(),
+      }),
+    })
+      .then(function (res) {
+        if (!res.ok) {
+          return res.json().catch(function () {
+            return {};
+          }).then(function (err) {
+            throw new Error(err.error || "summary request failed");
+          });
+        }
+        return res.json();
+      })
+      .then(function (payload) {
+        const summaryText = String((payload && payload.summary) || "").trim();
+        if (!summaryText) {
+          throw new Error("summary is empty");
+        }
+        setCachedSummary(hash, summaryText);
+        return summaryText;
+      })
+      .catch(function (err) {
+        if (err && err.name === "AbortError") {
+          return "";
+        }
+        throw err;
+      })
+      .finally(function () {
+        if (summaryInFlight.get(hash)) {
+          summaryInFlight.delete(hash);
+        }
+      });
+    summaryInFlight.set(hash, pending);
+
+    pending
+      .then(function (summaryText) {
+        if (!summaryText) {
+          return;
+        }
+        setVisibleSummary("AIで要約: " + reports.length + "件", summaryText);
+      })
+      .catch(function () {
+        setVisibleSummary(
+          "AIで要約: エラー",
+          "要約APIに接続できません。`node tools/summary-server.js` を起動して再試行してください。"
+        );
+      });
+  }
+
+  function scheduleVisibleSummary(force) {
+    if (summaryDebounceTimer) {
+      clearTimeout(summaryDebounceTimer);
+    }
+    summaryDebounceTimer = setTimeout(function () {
+      requestVisibleSummary(force);
+    }, force ? 50 : 650);
   }
 
   function buildPointLabel(rawDesc) {
@@ -384,6 +708,7 @@
       map.getSource(REPORT_SOURCE_ID).setData(reportGeoJsonFiltered);
     }
     updateLoadingLabel();
+    scheduleVisibleSummary(false);
   }
 
   function buildFilteredFeatureCollection(queryLower) {
@@ -481,11 +806,16 @@
       loadReportGeoJson();
     });
 
+    map.on("moveend", function () {
+      scheduleVisibleSummary(false);
+    });
+
     map.on("style.load", function () {
       ensureDataLayers();
       if (mapReady) {
         setReportSourceData(reportGeoJsonFiltered);
       }
+      scheduleVisibleSummary(true);
     });
   }
 
@@ -693,9 +1023,31 @@
     if (geoButton) {
       geoButton.addEventListener("click", flyToMyLocation);
     }
+
+    if (visibleSummaryOpenButton) {
+      visibleSummaryOpenButton.addEventListener("click", function () {
+        summaryPanelExpanded = true;
+        applySummaryPanelState();
+        scheduleVisibleSummary(true);
+      });
+    }
+
+    if (visibleSummaryCloseButton) {
+      visibleSummaryCloseButton.addEventListener("click", function () {
+        summaryPanelExpanded = false;
+        applySummaryPanelState();
+        if (summaryAbortController) {
+          summaryAbortController.abort();
+          summaryAbortController = null;
+        }
+      });
+    }
   }
 
   bindUiEvents();
+  setVisibleSummaryVisibility(false);
+  setSummaryOpenButtonVisibility(false);
+  applySummaryPanelState();
 
   (function screenAdjust() {
     if (getDevice() !== 1) {
@@ -707,6 +1059,7 @@
   })();
 
   $(window).on("resize", function () {
+    applySummaryPanelState();
     if (map) {
       map.resize();
     }

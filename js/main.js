@@ -37,7 +37,8 @@
   let viewer;
   let scene;
   let shinsai2011Photo;
-  let reportBillboards;
+  let reportPoints;
+  let reportGlows;
   let reportLabels;
 
   const reportTextById = new Map();
@@ -53,15 +54,18 @@
   let cullTimer = null;
   let tileLoadTimer = null;
   let isInitialTilesLoaded = false;
+  let isCameraMoving = false;
 
   const isSmartphone = detectSmartphoneContext();
   const cullMarginPx = 32;
+  const cullDebounceMs = 180;
   const tileLoadDebounceMs = 120;
-  const tilePrefetchMargin = 1;
+  const tilePrefetchMargin = 0;
   const scratchToObject = new Cesium.Cartesian3();
   const scratchWindow = new Cesium.Cartesian2();
-  const translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
+  const translucencyByDistancePoint = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
   const translucencyByDistanceLabel = new Cesium.NearFarScalar(300.0, 1.0, 100000, 0.0);
+  const pointStyleCache = new Map();
   const projectToWindowCoordinates =
     (typeof Cesium.SceneTransforms.wgs84ToWindowCoordinates === "function" &&
       Cesium.SceneTransforms.wgs84ToWindowCoordinates.bind(Cesium.SceneTransforms)) ||
@@ -306,6 +310,32 @@
       .trim();
   }
 
+  function buildLabelTextRuntime(text, fallbackName) {
+    const base = String(text || fallbackName || "No Text").trim();
+    const limit = 40;
+    return base.length > limit ? base.slice(0, limit) + "..." : base;
+  }
+
+  function getPointStyle(iconUrl) {
+    const key = String(iconUrl || "megaphone.png");
+    const cached = pointStyleCache.get(key);
+    if (cached) {
+      return cached;
+    }
+
+    const isTwitter = key.indexOf("twitter") !== -1;
+    const style = {
+      color: isTwitter ? Cesium.Color.fromCssColorString("#50b7ff") : Cesium.Color.fromCssColorString("#ff9e40"),
+      glowColor: isTwitter ? Cesium.Color.fromCssColorString("rgba(80, 183, 255, 0.35)") : Cesium.Color.fromCssColorString("rgba(255, 158, 64, 0.35)"),
+      outlineColor: Cesium.Color.fromCssColorString("rgba(0, 0, 0, 0.4)"),
+      outlineWidth: 1.0,
+      pixelSize: isSmartphone ? 8.1 : 7.2,
+      glowPixelSize: isSmartphone ? 16.0 : 14.0,
+    };
+    pointStyleCache.set(key, style);
+    return style;
+  }
+
   function lonLatToTileXY(lon, lat, z) {
     const latClamped = Math.max(-85.05112878, Math.min(85.05112878, lat));
     const n = Math.pow(2, z);
@@ -382,6 +412,7 @@
       lat: lat,
       name: name,
       text: plainText,
+      labelText: String(item.label || buildLabelTextRuntime(plainText, name)),
       descriptionHtml: String(item.desc || "<p class=\"tweettext\">本文がありません。</p>"),
       iconUrl: String(item.img || "megaphone.png"),
     };
@@ -392,18 +423,28 @@
       return;
     }
 
-    const labelSrc = report.text || report.name || "No Text";
-    const labelText = labelSrc.length > 40 ? labelSrc.slice(0, 40) + "..." : labelSrc;
     const height = 400 + 400 * Math.random();
     const position = Cesium.Cartesian3.fromDegrees(report.lon, report.lat, height);
+    const pointStyle = getPointStyle(report.iconUrl);
 
-    const billboard = reportBillboards.add({
+    const point = reportPoints.add({
       id: report.id,
       position: position,
-      image: "data/icon/flags/" + report.iconUrl,
-      scale: isSmartphone ? 0.63 : 0.54,
+      pixelSize: pointStyle.pixelSize,
+      color: pointStyle.color,
+      outlineColor: pointStyle.outlineColor,
+      outlineWidth: pointStyle.outlineWidth,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      translucencyByDistance: translucencyByDistanceBillboard,
+      translucencyByDistance: translucencyByDistancePoint,
+    });
+
+    const glow = reportGlows.add({
+      id: report.id,
+      position: position,
+      pixelSize: pointStyle.glowPixelSize,
+      color: pointStyle.glowColor,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      translucencyByDistance: translucencyByDistancePoint,
     });
 
     const label = reportLabels.add({
@@ -413,7 +454,7 @@
       style: Cesium.LabelStyle.FILL,
       fillColor: Cesium.Color.WHITE,
       pixelOffset: new Cesium.Cartesian2(20.0, 0),
-      text: labelText,
+      text: report.labelText,
       scaleByDistance: new Cesium.NearFarScalar(0.0, 1.5, 7500, 0.7),
       verticalOrigin: Cesium.VerticalOrigin.CENTER,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
@@ -424,7 +465,8 @@
     reportTextById.set(report.id, (report.name + " " + report.text).trim());
     reportDescriptionById.set(report.id, report.descriptionHtml);
     renderedReportById.set(report.id, {
-      billboard: billboard,
+      glow: glow,
+      point: point,
       label: label,
       tileKey: tileKey,
     });
@@ -442,7 +484,8 @@
       if (!rendered) {
         continue;
       }
-      reportBillboards.remove(rendered.billboard);
+      reportGlows.remove(rendered.glow);
+      reportPoints.remove(rendered.point);
       reportLabels.remove(rendered.label);
       renderedReportById.delete(reportId);
     }
@@ -567,6 +610,7 @@
       lat: lat,
       name: name,
       text: plainText,
+      labelText: buildLabelTextRuntime(plainText, name),
       descriptionHtml: htmlText || "<p class=\"tweettext\">本文がありません。</p>",
       iconUrl: String(record.iconUrl || "megaphone.png"),
     };
@@ -600,7 +644,8 @@
   }
 
   function loadReports() {
-    reportBillboards = viewer.scene.primitives.add(new Cesium.BillboardCollection());
+    reportGlows = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
+    reportPoints = viewer.scene.primitives.add(new Cesium.PointPrimitiveCollection());
     reportLabels = viewer.scene.primitives.add(new Cesium.LabelCollection());
 
     $.getJSON(reportTileIndexUrl)
@@ -640,35 +685,38 @@
     cullTimer = setTimeout(function () {
       cullTimer = null;
       updateVisibleReports();
-    }, 50);
+    }, cullDebounceMs);
   }
 
   function updateVisibleReports() {
-    if (!reportBillboards || !reportLabels) {
+    if (!reportPoints || !reportGlows || !reportLabels) {
       return;
     }
 
     const canvas = viewer.scene.canvas;
-    for (let i = 0; i < reportBillboards.length; i++) {
-      const billboard = reportBillboards.get(i);
+    for (let i = 0; i < reportPoints.length; i++) {
+      const glow = reportGlows.get(i);
+      const point = reportPoints.get(i);
       const label = reportLabels.get(i);
 
-      if (visibleFilterIds && !visibleFilterIds.has(billboard.id)) {
-        billboard.show = false;
+      if (visibleFilterIds && !visibleFilterIds.has(point.id)) {
+        glow.show = false;
+        point.show = false;
         label.show = false;
         continue;
       }
 
-      const toObject = Cesium.Cartesian3.subtract(billboard.position, viewer.camera.positionWC, scratchToObject);
+      const toObject = Cesium.Cartesian3.subtract(point.position, viewer.camera.positionWC, scratchToObject);
       const isFront = Cesium.Cartesian3.dot(viewer.camera.directionWC, toObject) > 0;
       if (!isFront) {
-        billboard.show = false;
+        glow.show = false;
+        point.show = false;
         label.show = false;
         continue;
       }
 
       const windowPosition = projectToWindowCoordinates
-        ? projectToWindowCoordinates(viewer.scene, billboard.position, scratchWindow)
+        ? projectToWindowCoordinates(viewer.scene, point.position, scratchWindow)
         : null;
       const isOnScreen =
         !!windowPosition &&
@@ -677,8 +725,9 @@
         windowPosition.y >= -cullMarginPx &&
         windowPosition.y <= canvas.clientHeight + cullMarginPx;
 
-      billboard.show = isOnScreen;
-      label.show = isOnScreen && !isSmartphone;
+      glow.show = isOnScreen;
+      point.show = isOnScreen;
+      label.show = !isCameraMoving && isOnScreen && !isSmartphone;
     }
 
     viewer.scene.requestRender();
@@ -689,6 +738,20 @@
       return;
     }
     cullingEnabled = true;
+    viewer.camera.moveStart.addEventListener(function () {
+      isCameraMoving = true;
+      if (reportLabels) {
+        for (let i = 0; i < reportLabels.length; i++) {
+          reportLabels.get(i).show = false;
+        }
+      }
+      viewer.scene.requestRender();
+    });
+    viewer.camera.moveEnd.addEventListener(function () {
+      isCameraMoving = false;
+      scheduleVisibilityUpdate();
+      scheduleTileLoadByView();
+    });
     viewer.camera.changed.addEventListener(scheduleVisibilityUpdate);
     window.addEventListener("resize", scheduleVisibilityUpdate);
     scheduleVisibilityUpdate();

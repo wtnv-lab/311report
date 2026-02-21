@@ -63,6 +63,12 @@ function buildLongName(reportName, plainText) {
   return base.length > limit ? base.slice(0, limit) + "..." : base;
 }
 
+function buildLabelText(text, fallbackName) {
+  const base = String(text || fallbackName || "No Text").trim();
+  const limit = 40;
+  return base.length > limit ? base.slice(0, limit) + "..." : base;
+}
+
 function main() {
   const raw = fs.readFileSync(sourcePath, "utf8");
   const reports = JSON.parse(raw);
@@ -97,6 +103,7 @@ function main() {
       id: String(report.id || `weathernews${i}`),
       name: longName,
       text: plainText,
+      label: buildLabelText(plainText, longName),
       desc: String(report.text || ""),
       lon: lon,
       lat: lat,

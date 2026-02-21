@@ -45,6 +45,83 @@ body,
     outline: solid 1px rgba(255, 255, 255, 0.2);
 }
 
+#tweetMessage.mobileInfoBox {
+    position: fixed;
+    top: auto;
+    left: 12px;
+    right: 12px;
+    bottom: calc(56px + env(safe-area-inset-bottom, 0px));
+    width: auto;
+    max-height: 40vh;
+    overflow-y: auto;
+    z-index: 30000;
+    padding: 4px 10px 8px;
+    background-color: rgba(0, 0, 0, 0.86);
+    border: 1px solid rgba(255, 255, 255, 0.24);
+    border-radius: 0;
+    box-sizing: border-box;
+    -webkit-overflow-scrolling: touch;
+}
+
+#tweetMessage.mobileInfoBox .mobileInfoClose {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 30px;
+    height: 30px;
+    border: 1px solid rgba(255, 255, 255, 0.4);
+    border-radius: 0;
+    background: rgba(0, 0, 0, 0.4);
+    color: #ffffff;
+    font-size: 20px;
+    line-height: 1;
+    cursor: pointer;
+}
+
+#tweetMessage.mobileInfoBox .mobileInfoBody {
+    padding-top: 0;
+    padding-right: 34px;
+}
+
+.mapboxgl-popup-content {
+    color: #ffffff;
+    background: rgba(0, 0, 0, 0.72);
+    border: 1px solid rgba(255, 255, 255, 0.22);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.42);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+@media (max-width: 768px) {
+    .mapboxgl-popup {
+        max-width: calc(100vw - 32px);
+    }
+
+    .mapboxgl-popup-content {
+        max-width: calc(100vw - 32px);
+    }
+}
+
+.mapboxgl-popup-tip {
+    border-top-color: rgba(0, 0, 0, 0.72) !important;
+    border-bottom-color: rgba(0, 0, 0, 0.72) !important;
+}
+
+.mapboxgl-popup-close-button {
+    color: rgba(255, 255, 255, 0.86);
+}
+
+.mapboxgl-popup-close-button:hover {
+    color: #ffffff;
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.mapboxgl-ctrl-top-right,
+.mapboxgl-ctrl-bottom-right {
+    z-index: 10005;
+}
 .tweettext {
     font-size: 13px;
     line-height: 20px;

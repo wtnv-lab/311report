@@ -30,8 +30,6 @@ body,
 
 /*コンテンツ表示*/
 
-/*コンテンツ表示*/
-
 #tweetMessage {
     position: absolute;
     top: -100px;
@@ -143,19 +141,47 @@ button.cesium-infoBox-close {
 
 /*ボタン群*/
 
+
 #buttonAbout {
     position: absolute;
-    top: 8px;
+    top: calc(8px + env(safe-area-inset-top));
     right: 8px;
     z-index: 10005;
     opacity: 0.8;
 }
 
+#buttonAR {
+    position: absolute;
+    top: calc(84px + env(safe-area-inset-top));
+    right: 8px;
+    z-index: 10005;
+    opacity: 0.9;
+    width: 36px;
+    height: 36px;
+    border-radius: 18px;
+}
+
+#buttonAR .button-content {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+}
+
+#buttonAR .button-text {
+    display: block;
+    font-size: 14px;
+    font-weight: bold;
+    line-height: 1;
+    padding: 0;
+}
+
 #buttonGeo {
     position: absolute;
-    bottom: 12px;
-    left: 50%;
-    margin-left: -20px;
+    top: calc(46px + env(safe-area-inset-top));
+    right: 8px;
     opacity: 0.9;
 }
 
@@ -173,6 +199,39 @@ a {
 a:hover {
     color: #333;
     background: gray;
+}
+
+#slide_menu {
+    position: fixed;
+    top: 48px;
+    left: -200px;
+    width: 80px;
+    opacity: 0.8;
+    padding: 0px 0px 20px 0px;
+    margin: 0px;
+    margin-bottom: 0px;
+    background: white;
+    text-align: center;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+}
+
+#slide_menu2 {
+    position: fixed;
+    top: 48px;
+    right: -200px;
+    width: 100px;
+    opacity: 0.8;
+    padding: 10px 10px 0px 10px;
+    margin: 0px;
+    margin-bottom: 0px;
+    background: white;
+    text-align: left;
+    -moz-border-radius: 3px;
+    -webkit-border-radius: 3px;
+    border-radius: 3px;
+    z-index: 10005;
 }
 
 .viewpoint {
@@ -248,12 +307,6 @@ a:hover {
 
 /*ジオコーダ*/
 
-input {
-    margin: 2px 0px 0px 0px;
-    padding: 0px;
-    width: 100px !important;
-}
-
 #textSearch {
     opacity: 1.0;
     position: absolute;
@@ -262,21 +315,72 @@ input {
     z-index: 10001;
 }
 
-.geocode {
+#geocode {
     opacity: 1.0;
     position: absolute;
-    top: 32px;
+    top: 42px;
     left: 8px;
     z-index: 10001;
 }
 
-.functions {
-    border: 0;
-    margin: 0px;
-    padding: 0px 0px 1px 2px;
+form.textbox {
+    margin: 0;
+    padding: 0;
+}
+
+input.textbox {
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    margin: 0;
+    padding: 1px 8px;
     font-size: 12px;
-    width: 100px;
-    height: 15px;
+    width: 132px;
+    height: 24px;
+    border-radius: 8px;
+    color: #f3f6fa;
+    -webkit-text-fill-color: #f3f6fa;
+    caret-color: #f3f6fa;
+    background: rgba(20, 24, 30, 0.62);
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    outline: none;
+}
+
+input.textbox:focus,
+input.textbox:active {
+    color: #f3f6fa;
+    background: rgba(20, 24, 30, 0.74);
+    border-color: rgba(255, 255, 255, 0.45);
+    outline: none;
+    -webkit-text-fill-color: #f3f6fa;
+}
+
+input.textbox::placeholder {
+    color: rgba(243, 246, 250, 0.68);
+}
+
+input.textbox:-webkit-autofill,
+input.textbox:-webkit-autofill:hover,
+input.textbox:-webkit-autofill:focus,
+input.textbox:-webkit-autofill:active {
+    -webkit-text-fill-color: #f3f6fa;
+    -webkit-box-shadow: 0 0 0 1000px rgba(20, 24, 30, 0.74) inset;
+    box-shadow: 0 0 0 1000px rgba(20, 24, 30, 0.74) inset;
+    transition: background-color 9999s ease-in-out 0s;
+}
+
+@media screen and (max-width: 768px) {
+    input.textbox {
+        width: 124px !important;
+    }
+
+    #textSearch {
+        top: 8px;
+    }
+
+    #geocode {
+        top: 42px;
+    }
 }
 
 

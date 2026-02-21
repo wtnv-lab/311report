@@ -7,8 +7,10 @@
 
   const mapContainerId = "cesiumContainer";
   const REPORT_SOURCE_ID = "report-source";
+  const CLUSTER_GLOW_LAYER_ID = "report-cluster-glow";
   const CLUSTER_CIRCLE_LAYER_ID = "report-cluster-circles";
   const CLUSTER_LABEL_LAYER_ID = "report-cluster-labels";
+  const POINT_GLOW_LAYER_ID = "report-point-glow";
   const POINT_LAYER_ID = "report-point-circles";
   const POINT_LABEL_LAYER_ID = "report-point-labels";
 
@@ -186,6 +188,31 @@
       });
     }
 
+    if (!map.getLayer(CLUSTER_GLOW_LAYER_ID)) {
+      map.addLayer({
+        id: CLUSTER_GLOW_LAYER_ID,
+        type: "circle",
+        source: REPORT_SOURCE_ID,
+        filter: ["has", "point_count"],
+        paint: {
+          "circle-color": "#ff9800",
+          "circle-opacity": 0.28,
+          "circle-blur": 0.92,
+          "circle-radius": [
+            "step",
+            ["get", "point_count"],
+            22,
+            20,
+            30,
+            100,
+            40,
+            500,
+            52,
+          ],
+        },
+      });
+    }
+
     if (!map.getLayer(CLUSTER_CIRCLE_LAYER_ID)) {
       map.addLayer({
         id: CLUSTER_CIRCLE_LAYER_ID,
@@ -243,6 +270,21 @@
     }
 
     if (!map.getLayer(POINT_LAYER_ID)) {
+      if (!map.getLayer(POINT_GLOW_LAYER_ID)) {
+        map.addLayer({
+          id: POINT_GLOW_LAYER_ID,
+          type: "circle",
+          source: REPORT_SOURCE_ID,
+          filter: ["!", ["has", "point_count"]],
+          paint: {
+            "circle-color": "#ff9800",
+            "circle-opacity": 0.34,
+            "circle-radius": 11,
+            "circle-blur": 0.9,
+          },
+        });
+      }
+
       map.addLayer({
         id: POINT_LAYER_ID,
         type: "circle",

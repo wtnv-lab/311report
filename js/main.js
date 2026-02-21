@@ -39,6 +39,15 @@
     }
   }
 
+  function hideReportMessage() {
+    if (!reportMessageDiv) {
+      return;
+    }
+    reportMessageDiv.classList.remove("mobileInfoBox");
+    reportMessageDiv.innerHTML = "";
+    $(reportMessageDiv).hide();
+  }
+
   function hideTitleScreen() {
     if (!titleScreenDiv) {
       return;
@@ -355,7 +364,7 @@
           pointPopup.remove();
           pointPopup = null;
         }
-        $(reportMessageDiv).hide();
+        hideReportMessage();
       });
       layersReady = true;
     }
@@ -531,10 +540,35 @@
       pointPopup.remove();
       pointPopup = null;
     }
+
+    const isMobileLayout = getDevice() === 1 || window.matchMedia("(max-width: 768px)").matches;
+    if (isMobileLayout && reportMessageDiv) {
+      reportMessageDiv.innerHTML =
+        '<button type="button" class="mobileInfoClose" aria-label="閉じる">×</button><div class="mobileInfoBody">' +
+        html +
+        "</div>";
+      reportMessageDiv.classList.add("mobileInfoBox");
+      $(reportMessageDiv).show();
+      const closeButton = reportMessageDiv.querySelector(".mobileInfoClose");
+      if (closeButton) {
+        closeButton.addEventListener("click", function () {
+          hideReportMessage();
+        });
+      }
+      return;
+    }
+
+    const viewportWidth = Math.max(document.documentElement.clientWidth || 0, window.innerWidth || 0);
+    const isNarrowViewport = viewportWidth <= 768;
+    const horizontalMargin = isNarrowViewport ? 16 : 24;
+    const popupMaxWidth = isNarrowViewport
+      ? Math.max(220, viewportWidth - horizontalMargin * 2)
+      : 340;
+
     pointPopup = new mapboxgl.Popup({
       closeButton: true,
       closeOnClick: false,
-      maxWidth: "340px",
+      maxWidth: popupMaxWidth + "px",
     })
       .setLngLat(feature.geometry.coordinates)
       .setHTML(html)
@@ -623,7 +657,7 @@
   }
 
   function textSearch() {
-    $(reportMessageDiv).hide();
+    hideReportMessage();
     const q = document.getElementById("searchQuery").value;
     applyTextFilter(q);
   }

@@ -7,7 +7,10 @@
     { label: "日本全国", lat: 34.00934, lng: 135.843524, heading: -47, pitch: -50, range: 2000000 },
     { label: "初期視点", lat: 37.81995, lng: 141.101672, heading: -27, pitch: -40, range: 240000 },
   ];
-  const reportDataUrl = appConfig.dataUrl || "data/czml/weathernews.json";
+  const legacyReportJsonUrl = appConfig.dataUrl || "data/czml/weathernews.json";
+  const reportTileIndexUrl = appConfig.tileIndexUrl || "data/czml/weathernews-tiles/index.json";
+  const reportSearchIndexUrl = appConfig.tileSearchUrl || "data/czml/weathernews-tiles/search.json";
+  const reportTileBaseUrl = reportTileIndexUrl.slice(0, reportTileIndexUrl.lastIndexOf("/") + 1);
   const aboutUrl = appConfig.githubUrl || "https://github.com/wtnv-lab/311report/";
 
   if (googleMapsApiKey) {
@@ -36,19 +39,29 @@
   let shinsai2011Photo;
   let reportBillboards;
   let reportLabels;
-  let reportList = [];
-  const reportById = new Map();
 
+  const reportTextById = new Map();
+  const reportDescriptionById = new Map();
+  const renderedReportById = new Map();
+  const loadedTileKeys = new Set();
+  const loadingTileKeys = new Set();
+  const tileReportIds = new Map();
+
+  let reportTileIndex = null;
   let visibleFilterIds = null;
   let cullingEnabled = false;
   let cullTimer = null;
+  let tileLoadTimer = null;
+  let isInitialTilesLoaded = false;
 
   const isSmartphone = detectSmartphoneContext();
   const cullMarginPx = 32;
+  const tileLoadDebounceMs = 120;
+  const tilePrefetchMargin = 1;
   const scratchToObject = new Cesium.Cartesian3();
   const scratchWindow = new Cesium.Cartesian2();
   const translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
-  const translucencyByDistanceLabel = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.0);
+  const translucencyByDistanceLabel = new Cesium.NearFarScalar(100.0, 1.0, 100000, 0.2);
   const projectToWindowCoordinates =
     (typeof Cesium.SceneTransforms.wgs84ToWindowCoordinates === "function" &&
       Cesium.SceneTransforms.wgs84ToWindowCoordinates.bind(Cesium.SceneTransforms)) ||
@@ -293,10 +306,246 @@
       .trim();
   }
 
-  function normalizeReport(record, index) {
+  function lonLatToTileXY(lon, lat, z) {
+    const latClamped = Math.max(-85.05112878, Math.min(85.05112878, lat));
+    const n = Math.pow(2, z);
+    const x = Math.floor(((lon + 180.0) / 360.0) * n);
+    const latRad = Cesium.Math.toRadians(latClamped);
+    const y = Math.floor(((1.0 - Math.log(Math.tan(latRad) + 1.0 / Math.cos(latRad)) / Math.PI) / 2.0) * n);
+    return {
+      x: Math.max(0, Math.min(n - 1, x)),
+      y: Math.max(0, Math.min(n - 1, y)),
+    };
+  }
+
+  function buildVisibleTileKeySet() {
+    const tileKeys = new Set();
+    if (!reportTileIndex) {
+      return tileKeys;
+    }
+
+    const rectangle = viewer.camera.computeViewRectangle(viewer.scene.globe.ellipsoid);
+    if (!rectangle) {
+      return tileKeys;
+    }
+
+    const zoom = reportTileIndex.zoom;
+    const westDeg = Cesium.Math.toDegrees(rectangle.west);
+    const eastDeg = Cesium.Math.toDegrees(rectangle.east);
+    const southDeg = Cesium.Math.toDegrees(rectangle.south);
+    const northDeg = Cesium.Math.toDegrees(rectangle.north);
+    const lonSegments = westDeg <= eastDeg ? [[westDeg, eastDeg]] : [[westDeg, 180.0], [-180.0, eastDeg]];
+
+    for (let i = 0; i < lonSegments.length; i++) {
+      const segment = lonSegments[i];
+      const min = lonLatToTileXY(segment[0], northDeg, zoom);
+      const max = lonLatToTileXY(segment[1], southDeg, zoom);
+      const minX = Math.min(min.x, max.x) - tilePrefetchMargin;
+      const maxX = Math.max(min.x, max.x) + tilePrefetchMargin;
+      const minY = Math.min(min.y, max.y) - tilePrefetchMargin;
+      const maxY = Math.max(min.y, max.y) + tilePrefetchMargin;
+      const tileCount = Math.pow(2, zoom);
+
+      for (let x = minX; x <= maxX; x++) {
+        for (let y = minY; y <= maxY; y++) {
+          if (x < 0 || y < 0 || y >= tileCount || x >= tileCount) {
+            continue;
+          }
+          const tileKey = zoom + "/" + x + "/" + y;
+          if (reportTileIndex.tiles[tileKey]) {
+            tileKeys.add(tileKey);
+          }
+        }
+      }
+    }
+
+    return tileKeys;
+  }
+
+  function normalizeCompactReport(item) {
+    if (!item) {
+      return null;
+    }
+
+    const lon = Number(item.lon);
+    const lat = Number(item.lat);
+    if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
+      return null;
+    }
+
+    const plainText = String(item.text || "");
+    const name = String(item.name || plainText || "No Text");
+
+    return {
+      id: String(item.id || ""),
+      lon: lon,
+      lat: lat,
+      name: name,
+      text: plainText,
+      descriptionHtml: String(item.desc || "<p class=\"tweettext\">本文がありません。</p>"),
+      iconUrl: String(item.img || "megaphone.png"),
+    };
+  }
+
+  function addReportToScene(report, tileKey) {
+    if (!report || !report.id || renderedReportById.has(report.id)) {
+      return;
+    }
+
+    const labelSrc = report.text || report.name || "No Text";
+    const labelText = labelSrc.length > 40 ? labelSrc.slice(0, 40) + "..." : labelSrc;
+    const height = 400 + 400 * Math.random();
+    const position = Cesium.Cartesian3.fromDegrees(report.lon, report.lat, height);
+
+    const billboard = reportBillboards.add({
+      id: report.id,
+      position: position,
+      image: "data/icon/flags/" + report.iconUrl,
+      scale: isSmartphone ? 0.63 : 0.54,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      translucencyByDistance: translucencyByDistanceBillboard,
+    });
+
+    const label = reportLabels.add({
+      id: report.id,
+      position: position,
+      font: "12pt Sans-Serif",
+      style: Cesium.LabelStyle.FILL,
+      fillColor: Cesium.Color.WHITE,
+      pixelOffset: new Cesium.Cartesian2(20.0, 0),
+      text: labelText,
+      scaleByDistance: new Cesium.NearFarScalar(0.0, 1.5, 1500, 0.7),
+      verticalOrigin: Cesium.VerticalOrigin.CENTER,
+      disableDepthTestDistance: Number.POSITIVE_INFINITY,
+      translucencyByDistance: translucencyByDistanceLabel,
+      show: !isSmartphone,
+    });
+
+    reportTextById.set(report.id, (report.name + " " + report.text).trim());
+    reportDescriptionById.set(report.id, report.descriptionHtml);
+    renderedReportById.set(report.id, {
+      billboard: billboard,
+      label: label,
+      tileKey: tileKey,
+    });
+  }
+
+  function removeTileFromScene(tileKey) {
+    const reportIds = tileReportIds.get(tileKey);
+    if (!reportIds) {
+      return;
+    }
+
+    for (let i = 0; i < reportIds.length; i++) {
+      const reportId = reportIds[i];
+      const rendered = renderedReportById.get(reportId);
+      if (!rendered) {
+        continue;
+      }
+      reportBillboards.remove(rendered.billboard);
+      reportLabels.remove(rendered.label);
+      renderedReportById.delete(reportId);
+    }
+
+    tileReportIds.delete(tileKey);
+    loadedTileKeys.delete(tileKey);
+  }
+
+  function loadTileByKey(tileKey) {
+    if (!reportTileIndex || loadedTileKeys.has(tileKey) || loadingTileKeys.has(tileKey)) {
+      return Promise.resolve();
+    }
+
+    const tileMeta = reportTileIndex.tiles[tileKey];
+    if (!tileMeta) {
+      return Promise.resolve();
+    }
+
+    loadingTileKeys.add(tileKey);
+    return $.getJSON(reportTileBaseUrl + tileMeta.path)
+      .then(function (tileData) {
+        const tileReports = (tileData && tileData.reports) || [];
+        const ids = [];
+
+        for (let i = 0; i < tileReports.length; i++) {
+          const normalized = normalizeCompactReport(tileReports[i]);
+          if (!normalized) {
+            continue;
+          }
+          addReportToScene(normalized, tileKey);
+          ids.push(normalized.id);
+        }
+
+        tileReportIds.set(tileKey, ids);
+        loadedTileKeys.add(tileKey);
+        loadingDiv.innerHTML =
+          "<p>" +
+          renderedReportById.size +
+          "/" +
+          (reportTileIndex.totalTweets || renderedReportById.size) +
+          " (visible tiles)</p>";
+      })
+      .always(function () {
+        loadingTileKeys.delete(tileKey);
+      });
+  }
+
+  function scheduleTileLoadByView() {
+    if (tileLoadTimer !== null) {
+      return;
+    }
+
+    tileLoadTimer = setTimeout(function () {
+      tileLoadTimer = null;
+      loadTilesByView();
+    }, tileLoadDebounceMs);
+  }
+
+  function loadTilesByView() {
+    if (!reportTileIndex) {
+      return;
+    }
+
+    const targetTileKeys = buildVisibleTileKeySet();
+    const loadPromises = [];
+
+    loadedTileKeys.forEach(function (loadedTileKey) {
+      if (!targetTileKeys.has(loadedTileKey)) {
+        removeTileFromScene(loadedTileKey);
+      }
+    });
+
+    targetTileKeys.forEach(function (tileKey) {
+      loadPromises.push(loadTileByKey(tileKey));
+    });
+
+    Promise.all(loadPromises).then(function () {
+      if (!isInitialTilesLoaded) {
+        isInitialTilesLoaded = true;
+        finishLoading();
+      }
+      updateVisibleReports();
+      viewer.scene.requestRender();
+    });
+  }
+
+  function loadSearchIndex() {
+    return $.getJSON(reportSearchIndexUrl).then(function (searchData) {
+      const reports = (searchData && searchData.tweets) || [];
+      for (let i = 0; i < reports.length; i++) {
+        const item = reports[i];
+        if (item && item.id) {
+          reportTextById.set(String(item.id), String(item.text || ""));
+        }
+      }
+    });
+  }
+
+  function normalizeLegacyReport(record, index) {
     if (!record || !record.position || !record.position.cartographicDegrees) {
       return null;
     }
+
     const coords = record.position.cartographicDegrees;
     if (!Array.isArray(coords) || coords.length < 2) {
       return null;
@@ -310,93 +559,65 @@
 
     const htmlText = String(record.text || "");
     const plainText = stripTags(htmlText);
-    const labelSrc = String(record.name || plainText || "No Text");
-    const labelText = labelSrc.length > 20 ? labelSrc.slice(0, 20) + "..." : labelSrc;
+    const name = String(record.name || plainText || "No Text");
 
     return {
       id: String(record.id || "weathernews" + index),
       lon: lon,
       lat: lat,
-      labelText: labelText,
-      searchText: (labelSrc + " " + plainText).toLowerCase(),
+      name: name,
+      text: plainText,
       descriptionHtml: htmlText || "<p class=\"tweettext\">本文がありません。</p>",
       iconUrl: String(record.iconUrl || "megaphone.png"),
     };
   }
 
-  function addReportToScene(report) {
-    const height = 400 + 400 * Math.random();
-    const position = Cesium.Cartesian3.fromDegrees(report.lon, report.lat, height);
+  function convertLegacyReportsToTileIndex(legacyReports) {
+    reportTileIndex = {
+      zoom: 9,
+      totalTweets: legacyReports.length,
+      tiles: {
+        "9/0/0": { path: "__legacy__", count: legacyReports.length },
+      },
+    };
 
-    const billboard = reportBillboards.add({
-      id: report.id,
-      position: position,
-      image: "data/icon/flags/" + report.iconUrl,
-      scale: isSmartphone ? 0.7 : 0.6,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      translucencyByDistance: translucencyByDistanceBillboard,
-    });
+    const ids = [];
+    for (let i = 0; i < legacyReports.length; i++) {
+      const normalized = normalizeLegacyReport(legacyReports[i], i);
+      if (!normalized) {
+        continue;
+      }
+      addReportToScene(normalized, "9/0/0");
+      ids.push(normalized.id);
+    }
 
-    const label = reportLabels.add({
-      id: report.id,
-      position: position,
-      font: "11pt Sans-Serif",
-      style: Cesium.LabelStyle.FILL,
-      fillColor: Cesium.Color.WHITE,
-      pixelOffset: new Cesium.Cartesian2(20.0, 0),
-      text: report.labelText,
-      scaleByDistance: new Cesium.NearFarScalar(0.0, 1.5, 7500, 0.7),
-      verticalOrigin: Cesium.VerticalOrigin.CENTER,
-      disableDepthTestDistance: Number.POSITIVE_INFINITY,
-      translucencyByDistance: translucencyByDistanceLabel,
-      show: !isSmartphone,
-    });
-
-    reportById.set(report.id, {
-      report: report,
-      billboard: billboard,
-      label: label,
-    });
+    tileReportIds.set("9/0/0", ids);
+    loadedTileKeys.add("9/0/0");
+    isInitialTilesLoaded = true;
+    finishLoading();
+    updateVisibleReports();
+    viewer.scene.requestRender();
   }
 
   function loadReports() {
     reportBillboards = viewer.scene.primitives.add(new Cesium.BillboardCollection());
     reportLabels = viewer.scene.primitives.add(new Cesium.LabelCollection());
 
-    $.getJSON(reportDataUrl)
-      .done(function (rawRecords) {
-        reportList = [];
-        for (let i = 0; i < rawRecords.length; i++) {
-          const normalized = normalizeReport(rawRecords[i], i);
-          if (normalized) {
-            reportList.push(normalized);
-          }
-        }
-
-        let cursor = 0;
-        const total = reportList.length;
-        const batchSize = isSmartphone ? 120 : 160;
-
-        function appendBatch() {
-          const end = Math.min(cursor + batchSize, total);
-          for (let i = cursor; i < end; i++) {
-            addReportToScene(reportList[i]);
-          }
-          cursor = end;
-          loadingDiv.innerHTML = "<p>" + cursor + "/" + total + "</p>";
-          viewer.scene.requestRender();
-
-          if (cursor < total) {
-            requestAnimationFrame(appendBatch);
-            return;
-          }
-          finishLoading();
-        }
-
-        appendBatch();
+    $.getJSON(reportTileIndexUrl)
+      .done(function (indexData) {
+        reportTileIndex = indexData;
+        loadSearchIndex().always(function () {
+          scheduleTileLoadByView();
+          viewer.camera.changed.addEventListener(scheduleTileLoadByView);
+          window.addEventListener("resize", scheduleTileLoadByView);
+        });
       })
       .fail(function () {
-        loadingDiv.innerHTML = "<p class='twCounter'>データの読み込みに失敗しました。</p>";
+        $.getJSON(legacyReportJsonUrl)
+          .done(convertLegacyReportsToTileIndex)
+          .fail(function () {
+            loadingDiv.innerHTML = "<p class='twCounter'>データの読み込みに失敗しました。</p>";
+          });
       });
   }
 
@@ -491,12 +712,11 @@
         }
 
         const pickedId = String(pickedObject.id);
-        const data = reportById.get(pickedId);
-        if (!data) {
+        const htmlText = reportDescriptionById.get(pickedId);
+        if (!htmlText) {
           return;
         }
 
-        const htmlText = data.report.descriptionHtml;
         const windowWidth = $(window).width();
         $(reportMessageDiv).fadeIn(200);
         adjustDivPosition();
@@ -601,12 +821,11 @@
     const matchedIdSet = searchQuery === "" ? null : new Set();
 
     if (searchQuery !== "") {
-      for (let i = 0; i < reportList.length; i++) {
-        const report = reportList[i];
-        if (report.searchText.indexOf(searchQuery) !== -1) {
-          matchedIdSet.add(report.id);
+      reportTextById.forEach(function (text, id) {
+        if (String(text).toLowerCase().indexOf(searchQuery) !== -1) {
+          matchedIdSet.add(id);
         }
-      }
+      });
     }
 
     visibleFilterIds = matchedIdSet;

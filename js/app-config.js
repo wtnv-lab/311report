@@ -7,6 +7,8 @@ window.APP_CONFIG = {
   mapTilerTerrainKey: "qi5xdyD8oNbX4Qt01nDv",
   githubUrl: "https://github.com/wtnv-lab/311report/",
   dataUrl: "data/czml/weathernews.json",
+  tileIndexUrl: "data/czml/weathernews-tiles/index.json",
+  tileSearchUrl: "data/czml/weathernews-tiles/search.json",
   viewPoints: [
     { label: "日本全国", lat: 34.00934, lng: 135.843524, heading: -47, pitch: -50, range: 2000000 },
     { label: "初期視点", lat: 37.81995, lng: 141.101672, heading: -27, pitch: -40, range: 240000 },

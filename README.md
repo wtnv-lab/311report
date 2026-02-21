@@ -18,3 +18,16 @@
 
 - ソースコードはコメントを参考に改修の上、自由に利用できます。
 - お問い合わせは hwtnv(at)iii.u-tokyo.ac.jp までお願いします。
+
+## タイルデータ生成
+
+`tweetMapping` と同様に、表示高速化のために JSON をタイル分割できます。
+
+```bash
+node tools/build-report-tiles.js
+```
+
+生成先:
+- `data/czml/weathernews-tiles/index.json`
+- `data/czml/weathernews-tiles/search.json`
+- `data/czml/weathernews-tiles/tiles/*.json`

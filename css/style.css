@@ -36,22 +36,22 @@ body,
     max-height: 40vh;
     overflow-y: auto;
     z-index: 30000;
-    padding: 8px 10px 8px;
+    padding: 4px 10px 8px;
     background-color: rgba(0, 0, 0, 0.86);
     border: 1px solid rgba(255, 255, 255, 0.24);
-    border-radius: 10px;
+    border-radius: 0;
     box-sizing: border-box;
     -webkit-overflow-scrolling: touch;
 }
 
 #tweetMessage.mobileInfoBox .mobileInfoClose {
     position: absolute;
-    top: 6px;
-    right: 6px;
+    top: 0;
+    right: 0;
     width: 30px;
     height: 30px;
     border: 1px solid rgba(255, 255, 255, 0.4);
-    border-radius: 6px;
+    border-radius: 0;
     background: rgba(0, 0, 0, 0.4);
     color: #ffffff;
     font-size: 20px;
@@ -60,7 +60,8 @@ body,
 }
 
 #tweetMessage.mobileInfoBox .mobileInfoBody {
-    padding-top: 20px;
+    padding-top: 0;
+    padding-right: 34px;
 }
 
 .mapboxgl-popup-content {

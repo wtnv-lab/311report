@@ -61,7 +61,7 @@
   const scratchToObject = new Cesium.Cartesian3();
   const scratchWindow = new Cesium.Cartesian2();
   const translucencyByDistanceBillboard = new Cesium.NearFarScalar(500.0, 1.0, 500000, 0.5);
-  const translucencyByDistanceLabel = new Cesium.NearFarScalar(100.0, 1.0, 100000, 0.2);
+  const translucencyByDistanceLabel = new Cesium.NearFarScalar(300.0, 1.0, 100000, 0.0);
   const projectToWindowCoordinates =
     (typeof Cesium.SceneTransforms.wgs84ToWindowCoordinates === "function" &&
       Cesium.SceneTransforms.wgs84ToWindowCoordinates.bind(Cesium.SceneTransforms)) ||
@@ -414,7 +414,7 @@
       fillColor: Cesium.Color.WHITE,
       pixelOffset: new Cesium.Cartesian2(20.0, 0),
       text: labelText,
-      scaleByDistance: new Cesium.NearFarScalar(0.0, 1.5, 1500, 0.7),
+      scaleByDistance: new Cesium.NearFarScalar(0.0, 1.5, 7500, 0.7),
       verticalOrigin: Cesium.VerticalOrigin.CENTER,
       disableDepthTestDistance: Number.POSITIVE_INFINITY,
       translucencyByDistance: translucencyByDistanceLabel,

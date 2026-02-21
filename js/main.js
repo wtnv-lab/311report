@@ -11,12 +11,15 @@
   const CLUSTER_CIRCLE_LAYER_ID = "report-cluster-circles";
   const CLUSTER_LABEL_LAYER_ID = "report-cluster-labels";
   const POINT_LAYER_ID = "report-point-circles";
+  const POINT_LABEL_LAYER_ID = "report-point-labels";
 
   const blackOutDiv = document.getElementById("blackOut");
   const loadingDiv = document.getElementById("twCounter");
   const reportMessageDiv = document.getElementById("tweetMessage");
+  const titleScreenDiv = document.querySelector(".titleScreen");
 
   let map = null;
+  let pointPopup = null;
   let mapReady = false;
   let layersReady = false;
   let isLoadingInitialData = true;
@@ -45,6 +48,17 @@
     } else {
       $(layer).fadeOut("slow");
     }
+  }
+
+  function hideTitleScreen() {
+    if (!titleScreenDiv) {
+      return;
+    }
+    setTimeout(function () {
+      $(titleScreenDiv).fadeOut(1200, function () {
+        $(titleScreenDiv).remove();
+      });
+    }, 1200);
   }
 
   function getDevice() {
@@ -81,9 +95,52 @@
     return String(value || "").toLowerCase();
   }
 
+  function offsetLonLatByMeters(lon, lat, meters, angleRad) {
+    const metersPerDegLat = 111320.0;
+    const cosLat = Math.cos((lat * Math.PI) / 180.0);
+    const safeCos = Math.max(0.1, Math.abs(cosLat));
+    const dLat = (meters * Math.sin(angleRad)) / metersPerDegLat;
+    const dLon = (meters * Math.cos(angleRad)) / (metersPerDegLat * safeCos);
+    return {
+      lon: lon + dLon,
+      lat: lat + dLat,
+    };
+  }
+
+  function applyDuplicatePointOffset(lon, lat, indexAtSamePoint) {
+    if (indexAtSamePoint <= 0) {
+      return { lon: lon, lat: lat };
+    }
+    const perRing = 8;
+    const ring = Math.floor((indexAtSamePoint - 1) / perRing) + 1;
+    const slot = (indexAtSamePoint - 1) % perRing;
+    const angle = ((Math.PI * 2) / perRing) * slot;
+    const meters = 18 * ring;
+    return offsetLonLatByMeters(lon, lat, meters, angle);
+  }
+
+  function stripHtmlTags(value) {
+    return String(value || "")
+      .replace(/<[^>]*>/g, " ")
+      .replace(/&nbsp;/g, " ")
+      .replace(/&amp;/g, "&")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  function buildPointLabel(rawDesc) {
+    const source = stripHtmlTags(rawDesc);
+    if (!source) {
+      return "";
+    }
+    const maxChars = 16;
+    return source.length > maxChars ? source.slice(0, maxChars) + "..." : source;
+  }
+
   function sanitizeGeoJson(data) {
     const sourceFeatures = data && Array.isArray(data.features) ? data.features : [];
     const features = [];
+    const samePointCounts = new Map();
 
     for (let i = 0; i < sourceFeatures.length; i++) {
       const f = sourceFeatures[i] || {};
@@ -94,10 +151,14 @@
       if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
         continue;
       }
+      const pointKey = lon.toFixed(6) + "," + lat.toFixed(6);
+      const indexAtSamePoint = samePointCounts.get(pointKey) || 0;
+      samePointCounts.set(pointKey, indexAtSamePoint + 1);
+      const shifted = applyDuplicatePointOffset(lon, lat, indexAtSamePoint);
 
       const props = f.properties || {};
       const id = String(props.id || "weathernews" + i);
-      const label = String(props.label || props.name || "");
+      const label = buildPointLabel(props.desc || props.text || "");
       const desc = String(props.desc || props.text || '<p class="tweettext">本文がありません。</p>');
       const searchText = normalizeSearchText(props.searchText || label + " " + desc);
 
@@ -105,7 +166,7 @@
         type: "Feature",
         geometry: {
           type: "Point",
-          coordinates: [lon, lat],
+          coordinates: [shifted.lon, shifted.lat],
         },
         properties: {
           id: id,
@@ -132,6 +193,7 @@
         type: "geojson",
         data: reportGeoJsonFiltered,
         cluster: true,
+        clusterMinPoints: 5,
         clusterRadius: 50,
         clusterMaxZoom: 13,
       });
@@ -208,12 +270,40 @@
         },
       });
     }
+    if (!map.getLayer(POINT_LABEL_LAYER_ID)) {
+      map.addLayer({
+        id: POINT_LABEL_LAYER_ID,
+        type: "symbol",
+        source: REPORT_SOURCE_ID,
+        filter: ["!", ["has", "point_count"]],
+        minzoom: 8,
+        layout: {
+          "text-field": ["coalesce", ["get", "label"], ""],
+          "text-size": 11,
+          "text-font": ["Open Sans Regular", "Arial Unicode MS Regular"],
+          "text-offset": [0, -1.1],
+          "text-anchor": "bottom",
+          "text-allow-overlap": false,
+        },
+        paint: {
+          "text-color": "#fff3e0",
+          "text-halo-color": "rgba(0,0,0,0.8)",
+          "text-halo-width": 1.2,
+        },
+      });
+    }
 
     if (!layersReady) {
       map.on("mouseenter", POINT_LAYER_ID, function () {
         map.getCanvas().style.cursor = "pointer";
       });
       map.on("mouseleave", POINT_LAYER_ID, function () {
+        map.getCanvas().style.cursor = "";
+      });
+      map.on("mouseenter", POINT_LABEL_LAYER_ID, function () {
+        map.getCanvas().style.cursor = "pointer";
+      });
+      map.on("mouseleave", POINT_LABEL_LAYER_ID, function () {
         map.getCanvas().style.cursor = "";
       });
       map.on("mouseenter", CLUSTER_CIRCLE_LAYER_ID, function () {
@@ -223,8 +313,19 @@
         map.getCanvas().style.cursor = "";
       });
       map.on("click", POINT_LAYER_ID, onPointClick);
+      map.on("click", POINT_LABEL_LAYER_ID, onPointClick);
       map.on("click", CLUSTER_CIRCLE_LAYER_ID, onClusterClick);
-      map.on("click", function () {
+      map.on("click", function (e) {
+        const hit = map.queryRenderedFeatures(e.point, {
+          layers: [POINT_LAYER_ID, POINT_LABEL_LAYER_ID, CLUSTER_CIRCLE_LAYER_ID],
+        });
+        if (hit && hit.length) {
+          return;
+        }
+        if (pointPopup) {
+          pointPopup.remove();
+          pointPopup = null;
+        }
         $(reportMessageDiv).hide();
       });
       layersReady = true;
@@ -232,6 +333,9 @@
   }
 
   function updateLoadingLabel() {
+    if (!loadingDiv) {
+      return;
+    }
     const count = reportGeoJsonFiltered && Array.isArray(reportGeoJsonFiltered.features) ? reportGeoJsonFiltered.features.length : 0;
     loadingDiv.innerHTML = "<p>" + count + " markers</p>";
   }
@@ -285,6 +389,7 @@
       .finally(function () {
         if (isLoadingInitialData) {
           isLoadingInitialData = false;
+          hideTitleScreen();
           fadeInOut(blackOutDiv, 0);
           fadeInOut(loadingDiv, 0);
         }
@@ -332,7 +437,6 @@
         { padding: 20, duration: 0 }
       );
 
-      $(".titleScreen").remove();
       fadeInOut(blackOutDiv, 1);
       fadeInOut(loadingDiv, 1);
 
@@ -394,40 +498,80 @@
 
     const feature = e.features[0];
     const html = String((feature.properties && feature.properties.desc) || "本文がありません。");
-    $(reportMessageDiv).html(html).fadeIn(120);
-
-    const p = e.point || { x: 0, y: 0 };
-    const w = $(window).width();
-    if (w - p.x < 340) {
-      $(reportMessageDiv).css({ left: p.x - 320, top: p.y + 8 });
-    } else {
-      $(reportMessageDiv).css({ left: p.x + 8, top: p.y + 8 });
+    if (pointPopup) {
+      pointPopup.remove();
+      pointPopup = null;
     }
+    pointPopup = new mapboxgl.Popup({
+      closeButton: true,
+      closeOnClick: false,
+      maxWidth: "340px",
+    })
+      .setLngLat(feature.geometry.coordinates)
+      .setHTML(html)
+      .addTo(map);
   }
 
   function geocode() {
-    if (!window.google || !google.maps || !google.maps.Geocoder) {
-      alert("地名検索の初期化に失敗しました。");
+    if (!map) {
       return;
     }
-    const geocoder = new google.maps.Geocoder();
-    const input = document.getElementById("inputtext").value;
-    geocoder.geocode({ address: input }, function (results, status) {
-      if (status !== "OK" || !results || !results[0]) {
+    const input = String(document.getElementById("inputtext").value || "").trim();
+    if (!input) {
+      return;
+    }
+    if (!mapboxAccessToken) {
+      alert("地名検索のトークンが未設定です。");
+      return;
+    }
+
+    const url =
+      "https://api.mapbox.com/geocoding/v5/mapbox.places/" +
+      encodeURIComponent(input) +
+      ".json?access_token=" +
+      encodeURIComponent(mapboxAccessToken) +
+      "&language=ja&limit=1";
+
+    fetch(url)
+      .then(function (res) {
+        if (!res.ok) {
+          throw new Error("geocode request failed");
+        }
+        return res.json();
+      })
+      .then(function (data) {
+        const features = (data && data.features) || [];
+        if (!features.length) {
+          alert("見つかりません");
+          return;
+        }
+        const f = features[0];
+        const bbox = f.bbox;
+        if (Array.isArray(bbox) && bbox.length === 4) {
+          map.fitBounds(
+            [
+              [Number(bbox[0]), Number(bbox[1])],
+              [Number(bbox[2]), Number(bbox[3])],
+            ],
+            { padding: 24, duration: 500 }
+          );
+          return;
+        }
+        const center = Array.isArray(f.center) ? f.center : null;
+        if (center && Number.isFinite(Number(center[0])) && Number.isFinite(Number(center[1]))) {
+          map.flyTo({
+            center: [Number(center[0]), Number(center[1])],
+            zoom: Math.max(map.getZoom(), 11),
+            speed: 1.0,
+            curve: 1.2,
+          });
+          return;
+        }
         alert("見つかりません");
-        return;
-      }
-      const vp = results[0].geometry.viewport;
-      const sw = vp.getSouthWest();
-      const ne = vp.getNorthEast();
-      map.fitBounds(
-        [
-          [sw.lng(), sw.lat()],
-          [ne.lng(), ne.lat()],
-        ],
-        { padding: 24, duration: 500 }
-      );
-    });
+      })
+      .catch(function () {
+        alert("地名検索に失敗しました。");
+      });
   }
 
   function flyToMyLocation() {
@@ -464,7 +608,7 @@
       setTimeout(resizeWindow, 0);
       return;
     }
-    $(".titleImage").css("width", "100%");
+    $(".titleImage").css("width", "64%");
     setTimeout(resizeWindow, 500);
   })();
 

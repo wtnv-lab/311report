@@ -2,7 +2,7 @@ window.APP_CONFIG = {
   googleMapsApiKey: "AIzaSyCc9E-ulJKRVMPyJe_V5sUVNU8kxiDIUtg",
   mapboxAccessToken:
     "pk.eyJ1IjoiaHd0bnYiLCJhIjoiY21sdnFiaGRtMDltbTNmczV5YW5mdDFlbyJ9.DtU1T9geoBDpAOAMt-7k4g",
-  mapboxStyleStreets: "mapbox/streets-v12",
+  mapboxStyleStreets: "mapbox/dark-v11",
   mapboxStyleSatellite: "mapbox/satellite-streets-v12",
   cesiumIonToken:
     "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiIzZjdkOGRkYi1hYzIxLTQ4MDMtYjZiMC0zODg5YjI2ZTRlZjIiLCJpZCI6MjgyLCJzY29wZXMiOlsiYXNsIiwiYXNyIiwiYXN3IiwiZ2MiXSwiaWF0IjoxNTYyMDEyNTIyfQ.aVsGtowVeK_5C25G5-WCK7bZHyfXUl_zQ5Ud7TKsq0U",

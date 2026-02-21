@@ -12,22 +12,20 @@
 - `index.html`: UIとエントリポイントのみ
 - `js/app-config.js`: APIキー、視点、データURLなどの設定
 - `js/analytics.js`: Google Analytics 初期化
-- `js/main.js`: Cesium初期化、レイヤ選択、データ描画、検索、ポップアップ表示
+- `js/main.js`: Mapbox初期化、標準クラスタリング、検索、ポップアップ表示
 
 ## 改修・利用
 
 - ソースコードはコメントを参考に改修の上、自由に利用できます。
 - お問い合わせは hwtnv(at)iii.u-tokyo.ac.jp までお願いします。
 
-## タイルデータ生成
+## GeoJSON生成
 
-`tweetMapping` と同様に、表示高速化のために JSON をタイル分割できます。
+元データ `data/czml/weathernews.json`（配列形式）を、Mapboxが直接読めるGeoJSONへ変換します。
 
 ```bash
-node tools/build-report-tiles.js
+node tools/build-report-geojson.js
 ```
 
 生成先:
-- `data/czml/weathernews-tiles/index.json`
-- `data/czml/weathernews-tiles/search.json`
-- `data/czml/weathernews-tiles/tiles/*.json`
+- `data/czml/weathernews.geojson`

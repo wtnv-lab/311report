@@ -74,6 +74,13 @@
   <div id="blackOut"></div>
   <div id="cesiumContainer"></div>
   <div id="tweetMessage"></div>
+  <div id="visibleSummary" class="visibleSummary" aria-live="polite">
+    <button id="visibleSummaryClose" class="visibleSummaryClose" type="button" aria-label="AIで要約を閉じる">×</button>
+    <p id="visibleSummaryStatus" class="visibleSummaryStatus">AIで要約: 待機中</p>
+    <p id="visibleSummaryText" class="visibleSummaryText">地図を移動すると、表示中リポートの要約を表示します。</p>
+  </div>
+  <button id="visibleSummaryOpen" class="visibleSummaryOpen isHidden" type="button" aria-label="AIで要約を開く">AIで要約</button>
+
   <div id="buttonAbout" class="general-button">
     <div class="button-content"><span class="icon-font">help</span></div>
   </div>

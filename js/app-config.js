@@ -5,4 +5,5 @@ window.APP_CONFIG = {
   analyticsDomain: "auto",
   githubUrl: "https://github.com/wtnv-lab/311report/",
   reportGeoJsonUrl: "data/czml/weathernews.geojson",
+  enableVisibleSummary: false,
 };

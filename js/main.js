@@ -28,7 +28,7 @@
   const SUMMARY_CACHE_PREFIX = "visible-summary-v1:";
   const SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000;
   const SUMMARY_CACHE_MAX = 200;
-  const ENABLE_VISIBLE_SUMMARY = false;
+  const ENABLE_VISIBLE_SUMMARY = appConfig.enableVisibleSummary !== false;
 
   let map = null;
   let pointPopup = null;

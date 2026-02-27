@@ -28,6 +28,7 @@
   const SUMMARY_CACHE_PREFIX = "visible-summary-v1:";
   const SUMMARY_CACHE_TTL_MS = 10 * 60 * 1000;
   const SUMMARY_CACHE_MAX = 200;
+  const ENABLE_VISIBLE_SUMMARY = false;
 
   let map = null;
   let pointPopup = null;
@@ -180,6 +181,11 @@
   }
 
   function applySummaryPanelState() {
+    if (!ENABLE_VISIBLE_SUMMARY) {
+      setVisibleSummaryVisibility(false);
+      setSummaryOpenButtonVisibility(false);
+      return;
+    }
     if (!isSummaryUiAvailable()) {
       setVisibleSummaryVisibility(false);
       setSummaryOpenButtonVisibility(false);
@@ -319,6 +325,9 @@
   }
 
   function requestVisibleSummary(force) {
+    if (!ENABLE_VISIBLE_SUMMARY) {
+      return;
+    }
     if (!map || !mapReady || !layersReady) {
       return;
     }
@@ -442,6 +451,9 @@
   }
 
   function scheduleVisibleSummary(force) {
+    if (!ENABLE_VISIBLE_SUMMARY) {
+      return;
+    }
     if (summaryDebounceTimer) {
       clearTimeout(summaryDebounceTimer);
     }
@@ -1024,7 +1036,7 @@
       geoButton.addEventListener("click", flyToMyLocation);
     }
 
-    if (visibleSummaryOpenButton) {
+    if (ENABLE_VISIBLE_SUMMARY && visibleSummaryOpenButton) {
       visibleSummaryOpenButton.addEventListener("click", function () {
         summaryPanelExpanded = true;
         applySummaryPanelState();
@@ -1032,7 +1044,7 @@
       });
     }
 
-    if (visibleSummaryCloseButton) {
+    if (ENABLE_VISIBLE_SUMMARY && visibleSummaryCloseButton) {
       visibleSummaryCloseButton.addEventListener("click", function () {
         summaryPanelExpanded = false;
         applySummaryPanelState();
